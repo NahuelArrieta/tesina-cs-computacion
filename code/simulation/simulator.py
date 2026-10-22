@@ -5,6 +5,7 @@ from .incident_manager import IncidentManager
 
 ## Output files
 TRIPINFO_PATH = "tripinfo.xml"
+FCD_OUTPUT_PATH = "fcd_output.xml"
 
 def run_simulation(duration, incident_edge, incident_start, incident_end, sumo_file, output_dir=None):
     sumo_binary = "sumo-gui"
@@ -21,7 +22,12 @@ def run_simulation(duration, incident_edge, incident_start, incident_end, sumo_f
         # Check if the output directory exists, if not create it
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
+
         sumo_cmd += ["--tripinfo-output", os.path.join(output_dir, TRIPINFO_PATH)]
+
+        sumo_cmd += ["--fcd-output", os.path.join(output_dir, FCD_OUTPUT_PATH),
+            "--fcd-output.attributes", "id,speed,acceleration",
+        ]
 
     traci.start(sumo_cmd)
 

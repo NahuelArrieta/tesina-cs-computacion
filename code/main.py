@@ -23,3 +23,18 @@ efficiency_metrics = compute_network_efficiency(df_trips)
 print("Efficiency Metrics:")
 for metric, value in efficiency_metrics.items():
     print(f"{metric}: {value}")
+
+## Compute stability metrics
+from metrics.stability_metrics import parse_and_compute_phased_stability
+fcd_output_path = os.path.join(OUTPUT_DIR, "fcd_output.xml")
+phase_windows = {
+    "pre_incident": (0.0, INCIDENT_START),
+    "incident": (INCIDENT_START, INCIDENT_END),
+    "post_incident": (INCIDENT_END, SIM_DURATION)
+}
+stability_metrics = parse_and_compute_phased_stability(fcd_output_path, phase_windows, exclude_ids=["veh_bloqueo"])
+print("\nStability Metrics:")
+for phase, metrics in stability_metrics.items():
+    print(f"\nPhase: {phase}")
+    for metric, value in metrics.items():
+        print(f"\t{metric}: {value}") 
