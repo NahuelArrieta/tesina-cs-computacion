@@ -1,0 +1,8 @@
+<additional>
+    <!-- Incident lane -->
+    <laneAreaDetector id="e2_A2B2_0" lane="A2B2_0" pos="0" endPos="-1" freq="30" file="e2_output.xml"/>
+    
+    <!-- Upstream feeder lanes-->
+    <laneAreaDetector id="e2_A1A2_0" lane="A1A2_0" pos="0" endPos="-1" freq="30" file="e2_output.xml"/>
+    <laneAreaDetector id="e2_B1B2_0" lane="B1B2_0" pos="0" endPos="-1" freq="30" file="e2_output.xml"/>
+</additional>

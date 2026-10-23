@@ -38,3 +38,25 @@ for phase, metrics in stability_metrics.items():
     print(f"\nPhase: {phase}")
     for metric, value in metrics.items():
         print(f"\t{metric}: {value}") 
+
+## Compute congestion metrics
+from metrics.congestion_metrics import parse_and_compute_congestion_e2
+e2_output_path = os.path.join(OUTPUT_DIR, "e2_output.xml")
+detector_ids = ["e2_A2B2_0", "e2_A1A2_0", "e2_B1B2_0"]
+congestion_metrics, timeseries_records = parse_and_compute_congestion_e2(
+    e2_xml_path=e2_output_path,
+    incident_start_s=INCIDENT_START,
+    incident_end_s=INCIDENT_END,
+    target_detector_ids=detector_ids,
+    congested_queue_threshold_m=20.0,
+    baseline_speed_ratio=0.90
+)
+print("\nCongestion Metrics:")
+for metric, value in congestion_metrics.items():
+    print(f"{metric}: {value}") 
+
+## Compute timeseries records
+record = timeseries_records[0] if timeseries_records else None
+if record:
+    print("\nTimeseries Records:")
+    print(record) 

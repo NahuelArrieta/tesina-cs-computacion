@@ -19,13 +19,18 @@ def run_simulation(duration, incident_edge, incident_start, incident_end, sumo_f
     sumo_cmd = [sumo_binary, "-c", sumo_file, "--step-length", "0.1"]
 
     if output_dir:
-        # Check if the output directory exists, if not create it
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.abspath(output_dir)
+        output_prefix = os.path.relpath(
+            output_path,
+            start=os.path.dirname(os.path.abspath(sumo_file)),
+        )
+        output_prefix = os.path.join(output_prefix, "")
 
-        sumo_cmd += ["--tripinfo-output", os.path.join(output_dir, TRIPINFO_PATH)]
+        sumo_cmd += ["--output-prefix", output_prefix]
+        sumo_cmd += ["--tripinfo-output", os.path.join(output_path, TRIPINFO_PATH)]
 
-        sumo_cmd += ["--fcd-output", os.path.join(output_dir, FCD_OUTPUT_PATH),
+        sumo_cmd += ["--fcd-output", os.path.join(output_path, FCD_OUTPUT_PATH),
             "--fcd-output.attributes", "id,speed,acceleration",
         ]
 
