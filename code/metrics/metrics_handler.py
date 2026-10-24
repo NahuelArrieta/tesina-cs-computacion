@@ -1,0 +1,133 @@
+import csv
+import json
+from pathlib import Path
+from typing import Any, Iterable, Mapping, Sequence
+
+from .congestion_metrics import parse_and_compute_congestion_e2
+from .efficiency_metrics import compute_network_efficiency, parse_tripinfo
+from .stability_metrics import parse_and_compute_phased_stability
+
+
+MetricData = dict[str, Any]
+
+
+def collect_metrics(
+    output_dir: str | Path,
+    incident_start_s: float,
+    incident_end_s: float,
+    sim_duration_seconds: float = 3600.0,
+    exclude_ids: Iterable[str] = (),
+    target_detector_ids: Sequence[str] | None = None,
+    congested_queue_threshold_m: float = 20.0,
+    baseline_speed_ratio: float = 0.90,
+) -> MetricData:
+    """Compute all metrics from the XML files produced by a simulation.
+
+    ``output_dir`` must contain ``tripinfo.xml``, ``fcd_output.xml`` and
+    ``e2_output.xml``. Missing files are reported by the underlying parsers.
+    """
+    output_path = Path(output_dir)
+    excluded = set(exclude_ids)
+    phase_windows = {
+        "pre_incident": (0.0, incident_start_s),
+        "incident": (incident_start_s, incident_end_s),
+        "post_incident": (incident_end_s, sim_duration_seconds),
+    }
+
+    trips = parse_tripinfo(output_path / "tripinfo.xml", excluded)
+    efficiency = compute_network_efficiency(trips, sim_duration_seconds)
+    stability_steps, stability = parse_and_compute_phased_stability(
+        output_path / "fcd_output.xml",
+        phase_windows,
+        excluded,
+    )
+    congestion, congestion_timeseries = parse_and_compute_congestion_e2(
+        output_path / "e2_output.xml",
+        incident_start_s,
+        incident_end_s,
+        target_detector_ids,
+        congested_queue_threshold_m,
+        baseline_speed_ratio,
+    )
+
+    return {
+        "efficiency": efficiency,
+        "stability": stability,
+        "stability_timeseries": stability_steps,
+        "congestion": congestion,
+        "congestion_timeseries": congestion_timeseries,
+    }
+
+
+def _write_rows(
+    rows: Sequence[Mapping[str, Any]],
+    path: Path,
+) -> None:
+    """Write a collection of metric records to a CSV file."""
+    fieldnames = sorted({key for row in rows for key in row})
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def export_metrics(
+    metrics: Mapping[str, Any],
+    export_dir: str | Path,
+    basename: str = "metrics",
+) -> dict[str, Path]:
+    """Export summaries to JSON and each time series to its own CSV."""
+    destination = Path(export_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    json_path = destination / f"{basename}.json"
+
+    aggregated = {
+        key: value
+        for key, value in metrics.items()
+        if not key.endswith("_timeseries")
+    }
+    with json_path.open("w", encoding="utf-8") as json_file:
+        json.dump(aggregated, json_file, indent=2, ensure_ascii=False)
+        json_file.write("\n")
+
+    output_paths = {"json": json_path}
+    series_files = {
+        "stability_timeseries": f"{basename}_stability_by_step.csv",
+        "congestion_timeseries": f"{basename}_congestion_by_interval.csv",
+    }
+    for series_name, filename in series_files.items():
+        path = destination / filename
+        rows = metrics.get(series_name, [])
+        if not isinstance(rows, list):
+            raise TypeError(f"{series_name} must be a list of row records")
+        _write_rows(rows, path)
+        output_paths[series_name] = path
+
+    return output_paths
+
+
+def process_metrics(
+    output_dir: str | Path,
+    incident_start_s: float,
+    incident_end_s: float,
+    sim_duration_seconds: float = 3600.0,
+    export_dir: str | Path | None = None,
+    basename: str = "metrics",
+    exclude_ids: Iterable[str] = (),
+    target_detector_ids: Sequence[str] | None = None,
+    congested_queue_threshold_m: float = 20.0,
+    baseline_speed_ratio: float = 0.90,
+) -> tuple[MetricData, dict[str, Path]]:
+    """Compute all metrics and export them, returning data and output paths."""
+    metrics = collect_metrics(
+        output_dir=output_dir,
+        incident_start_s=incident_start_s,
+        incident_end_s=incident_end_s,
+        sim_duration_seconds=sim_duration_seconds,
+        exclude_ids=exclude_ids,
+        target_detector_ids=target_detector_ids,
+        congested_queue_threshold_m=congested_queue_threshold_m,
+        baseline_speed_ratio=baseline_speed_ratio,
+    )
+    destination = output_dir if export_dir is None else export_dir
+    return metrics, export_metrics(metrics, destination, basename)
