@@ -62,9 +62,14 @@ def collect_metrics(
 def _write_rows(
     rows: Sequence[Mapping[str, Any]],
     path: Path,
+    first_columns: Sequence[str] = (),
 ) -> None:
     """Write a collection of metric records to a CSV file."""
-    fieldnames = sorted({key for row in rows for key in row})
+    columns = {key for row in rows for key in row}
+    fieldnames = [
+        *[column for column in first_columns if column in columns],
+        *sorted(columns.difference(first_columns)),
+    ]
     with path.open("w", encoding="utf-8", newline="") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
@@ -93,15 +98,21 @@ def export_metrics(
 
     output_paths = {"json": json_path}
     series_files = {
-        "stability_timeseries": f"{basename}_stability_by_step.csv",
-        "congestion_timeseries": f"{basename}_congestion_by_interval.csv",
+        "stability_timeseries": (
+            f"{basename}_stability_by_step.csv",
+            ("time",),
+        ),
+        "congestion_timeseries": (
+            f"{basename}_congestion_by_interval.csv",
+            ("time_begin_s", "time_end_s", "interval_midpoint_s"),
+        ),
     }
-    for series_name, filename in series_files.items():
+    for series_name, (filename, first_columns) in series_files.items():
         path = destination / filename
         rows = metrics.get(series_name, [])
         if not isinstance(rows, list):
             raise TypeError(f"{series_name} must be a list of row records")
-        _write_rows(rows, path)
+        _write_rows(rows, path, first_columns)
         output_paths[series_name] = path
 
     return output_paths
