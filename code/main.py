@@ -32,12 +32,16 @@ phase_windows = {
     "incident": (INCIDENT_START, INCIDENT_END),
     "post_incident": (INCIDENT_END, SIM_DURATION)
 }
-_, stability_metrics = parse_and_compute_phased_stability(fcd_output_path, phase_windows, exclude_ids=["veh_bloqueo"])
+steps_results, stability_metrics = parse_and_compute_phased_stability(fcd_output_path, phase_windows, exclude_ids=["veh_bloqueo"])
 print("\nStability Metrics:")
 for phase, metrics in stability_metrics.items():
     print(f"\nPhase: {phase}")
     for metric, value in metrics.items():
         print(f"\t{metric}: {value}") 
+step = steps_results[43] if steps_results else None
+if step:
+    print("\nStability Steps Results:")
+    print(step)
 
 ## Compute congestion metrics
 from metrics.congestion_metrics import parse_and_compute_congestion_e2
