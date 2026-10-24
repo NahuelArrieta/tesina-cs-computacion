@@ -123,10 +123,40 @@ def compute_phased_stability(results, phase_windows):
     return {phase.name: phase.compute_summary() for phase in phases}
 
 
+def summarize_stability_metrics_by_steps(results):
+    summary = []
+    for result in results:
+        step_time = result["time"]
+        speeds = result["speeds"]
+        accelerations = result["accelerations"]
+        hard_brakes = result["hard_brakes"]
+        jerks_step = result["jerks"]
+
+        mean_speed = float(np.mean(speeds)) if speeds else 0.0
+        speed_std = float(np.std(speeds)) if speeds else 0.0
+        accel_var = float(np.var(accelerations)) if accelerations else 0.0
+        mean_abs_jerk = float(np.mean(np.abs(jerks_step))) if jerks_step else 0.0
+        max_abs_jerk = float(np.max(np.abs(jerks_step))) if jerks_step else 0.0
+
+        summary.append({
+            "time": step_time,
+            "mean_speed_mps": round(mean_speed, 4),
+            "speed_std_mps": round(speed_std, 4),
+            "accel_var_mps2": round(accel_var, 4),
+            "hard_brake_events": hard_brakes,
+            "mean_abs_jerk_mps3": round(mean_abs_jerk, 4),
+            "max_abs_jerk_mps3": round(max_abs_jerk, 4)
+        })
+
+    return summary
+
+
 def parse_and_compute_phased_stability(xml_file_path, phase_windows, exclude_ids):
     if not os.path.exists(xml_file_path):
         raise FileNotFoundError(f"File not found: {xml_file_path}")
 
     results = compute_steps_stability(xml_file_path, exclude_ids)
+
+    step_summary = summarize_stability_metrics_by_steps(results)
     phased_results = compute_phased_stability(results, phase_windows)
-    return results, phased_results
+    return step_summary, phased_results
