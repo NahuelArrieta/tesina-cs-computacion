@@ -46,32 +46,16 @@ class PhaseAccumulator:
             "hard_brake_events": self.hard_brake_events
         }
 
-
-def parse_and_compute_phased_stability(xml_file_path, phase_windows, exclude_ids):
-    if not os.path.exists(xml_file_path):
-        raise FileNotFoundError(f"File not found: {xml_file_path}")
-
-    # Initialize accumulators
-    phases = [
-        PhaseAccumulator(phase_name, window[0], window[1])
-        for phase_name, window in phase_windows.items()
-    ]
-
-    min_time = min(w[0] for w in phase_windows.values())
-    max_time = max(w[1] for w in phase_windows.values())
-
+def compute_steps_stability(xml_file_path, exclude_ids):
     context = ET.iterparse(xml_file_path, events=("end",))
 
+    results = []
+    
     veh_prev_state = {}
 
     for event, elem in context:
         if elem.tag == "timestep":
             step_time = float(elem.get("time"))
-
-            # Discard steps falling outside all defined analysis phases
-            if step_time < min_time or step_time >= max_time:
-                elem.clear()
-                continue
 
             speeds = []
             accelerations = []
@@ -101,19 +85,48 @@ def parse_and_compute_phased_stability(xml_file_path, phase_windows, exclude_ids
                 if accel <= HARD_BRAKE_THRESHOLD:
                     hard_brakes += 1
 
-            # Dispatch step values to the matching phase
-            for phase in phases:
-                if phase.contains(step_time):
-                    phase.add_step(speeds, accelerations, jerks_step, hard_brakes)
-                    break
-
-            elem.clear()
-
-    del context
-
-    # Consolidate results per phase
-    results = {}
-    for phase in phases:
-        results[phase.name] = phase.compute_summary()
+            results.append({
+                "time": step_time,
+                "speeds": speeds,
+                "accelerations": accelerations,
+                "hard_brakes": hard_brakes,
+                "jerks": jerks_step
+            })
 
     return results
+
+
+
+def compute_phased_stability(results, phase_windows):
+    # Initialize accumulators
+    phases = [
+        PhaseAccumulator(phase_name, window[0], window[1])
+        for phase_name, window in phase_windows.items()
+    ]
+
+    min_time = min(w[0] for w in phase_windows.values())
+    max_time = max(w[1] for w in phase_windows.values())
+
+    # Process each result
+    for result in results:
+        step_time = result["time"]
+        if step_time < min_time or step_time > max_time:
+            continue
+
+        # Dispatch step values to the matching phase
+        for phase in phases:
+            if phase.contains(step_time):
+                phase.add_step(result["speeds"], result["accelerations"], result["jerks"], result["hard_brakes"])
+                break
+
+    # Consolidate results per phase
+    return {phase.name: phase.compute_summary() for phase in phases}
+
+
+def parse_and_compute_phased_stability(xml_file_path, phase_windows, exclude_ids):
+    if not os.path.exists(xml_file_path):
+        raise FileNotFoundError(f"File not found: {xml_file_path}")
+
+    results = compute_steps_stability(xml_file_path, exclude_ids)
+    phased_results = compute_phased_stability(results, phase_windows)
+    return results, phased_results

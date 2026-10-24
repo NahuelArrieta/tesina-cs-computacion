@@ -32,7 +32,7 @@ phase_windows = {
     "incident": (INCIDENT_START, INCIDENT_END),
     "post_incident": (INCIDENT_END, SIM_DURATION)
 }
-stability_metrics = parse_and_compute_phased_stability(fcd_output_path, phase_windows, exclude_ids=["veh_bloqueo"])
+_, stability_metrics = parse_and_compute_phased_stability(fcd_output_path, phase_windows, exclude_ids=["veh_bloqueo"])
 print("\nStability Metrics:")
 for phase, metrics in stability_metrics.items():
     print(f"\nPhase: {phase}")
