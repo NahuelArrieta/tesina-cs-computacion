@@ -13,22 +13,26 @@ class PhaseAccumulator:
         self.speed_std_series = []
         self.accel_var_series = []
         self.mean_speed_series = []
+        self.jerk_samples = []
         self.hard_brake_events = 0
         self.total_samples = 0
 
     def contains(self, timestamp):
         return self.start_time <= timestamp < self.end_time
 
-    def add_step(self, speeds, accelerations, hard_brakes):
+    def add_step(self, speeds, accelerations, jerks, hard_brakes):
         if speeds:
             self.speed_std_series.append(float(np.std(speeds)))
             self.mean_speed_series.append(float(np.mean(speeds)))
         if accelerations:
             self.accel_var_series.append(float(np.var(accelerations)))
+        if jerks:
+            self.jerk_samples.append(float(np.mean(jerks)))
         self.hard_brake_events += hard_brakes
         self.total_samples += len(speeds)
 
     def compute_summary(self):
+        abs_jerks = np.abs(self.jerk_samples) if self.jerk_samples else []  
         return {
             "mean_speed_std": round(float(np.mean(self.speed_std_series)), 4) if self.speed_std_series else 0.0,
             "max_speed_std": round(float(np.max(self.speed_std_series)), 4) if self.speed_std_series else 0.0,
@@ -37,6 +41,9 @@ class PhaseAccumulator:
             "mean_speed_mps": round(float(np.mean(self.mean_speed_series)), 4) if self.mean_speed_series else 0.0,
             "hard_brake_events": self.hard_brake_events,
             "hard_brake_ratio": round(self.hard_brake_events / self.total_samples, 6) if self.total_samples > 0 else 0.0,
+            "mean_abs_jerk_mps3": round(float(np.mean(abs_jerks)), 4) if len(abs_jerks) > 0 else 0.0,  # <--- NUEVO
+            "max_abs_jerk_mps3": round(float(np.max(abs_jerks)), 4) if len(abs_jerks) > 0 else 0.0,   # <--- NUEVO
+            "hard_brake_events": self.hard_brake_events
         }
 
 
@@ -55,6 +62,8 @@ def parse_and_compute_phased_stability(xml_file_path, phase_windows, exclude_ids
 
     context = ET.iterparse(xml_file_path, events=("end",))
 
+    veh_prev_state = {}
+
     for event, elem in context:
         if elem.tag == "timestep":
             step_time = float(elem.get("time"))
@@ -66,6 +75,7 @@ def parse_and_compute_phased_stability(xml_file_path, phase_windows, exclude_ids
 
             speeds = []
             accelerations = []
+            jerks_step = []
             hard_brakes = 0
 
             for veh in elem.findall("vehicle"):
@@ -76,6 +86,15 @@ def parse_and_compute_phased_stability(xml_file_path, phase_windows, exclude_ids
                 speed = float(veh.get("speed", 0.0))
                 accel = float(veh.get("acceleration", 0.0))
 
+                if veh_id in veh_prev_state:
+                    prev_time, prev_accel = veh_prev_state[veh_id]
+                    dt = step_time - prev_time
+                    if dt > 0:
+                        jerk = (accel - prev_accel) / dt
+                        jerks_step.append(jerk)
+
+                veh_prev_state[veh_id] = (step_time, accel)
+
                 speeds.append(speed)
                 accelerations.append(accel)
 
@@ -85,7 +104,7 @@ def parse_and_compute_phased_stability(xml_file_path, phase_windows, exclude_ids
             # Dispatch step values to the matching phase
             for phase in phases:
                 if phase.contains(step_time):
-                    phase.add_step(speeds, accelerations, hard_brakes)
+                    phase.add_step(speeds, accelerations, jerks_step, hard_brakes)
                     break
 
             elem.clear()
