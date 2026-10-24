@@ -1,0 +1,53 @@
+{
+  "efficiency": {
+    "completed_vehicles": 590,
+    "total_travel_time_s": 68763.4,
+    "mean_travel_time_s": 116.55,
+    "total_delay_s": 27507.27,
+    "mean_delay_s": 46.62,
+    "mean_speed_mps": 8.14,
+    "throughput_veh_hour": 2124.0
+  },
+  "stability": {
+    "pre_incident": {
+      "mean_speed_std": 4.7257,
+      "max_speed_std": 6.8225,
+      "mean_accel_var": 1.8088,
+      "max_accel_var": 5.3345,
+      "mean_speed_mps": 9.5184,
+      "hard_brake_events": 2001,
+      "hard_brake_ratio": 0.061529,
+      "mean_abs_jerk_mps3": 1.5232,
+      "max_abs_jerk_mps3": 14.7517
+    },
+    "incident": {
+      "mean_speed_std": 5.5288,
+      "max_speed_std": 6.8656,
+      "mean_accel_var": 1.8416,
+      "max_accel_var": 5.1245,
+      "mean_speed_mps": 8.2219,
+      "hard_brake_events": 20314,
+      "hard_brake_ratio": 0.051999,
+      "mean_abs_jerk_mps3": 0.7263,
+      "max_abs_jerk_mps3": 14.545
+    },
+    "post_incident": {
+      "mean_speed_std": 5.633,
+      "max_speed_std": 6.9353,
+      "mean_accel_var": 1.7817,
+      "max_accel_var": 4.8055,
+      "mean_speed_mps": 7.9001,
+      "hard_brake_events": 15800,
+      "hard_brake_ratio": 0.049617,
+      "mean_abs_jerk_mps3": 0.706,
+      "max_abs_jerk_mps3": 15.5671
+    }
+  },
+  "congestion": {
+    "mean_queue_length_m": 5.39,
+    "max_queue_length_m": 93.6,
+    "mean_congested_segments": 0.26,
+    "max_congested_segments": 1,
+    "network_recovery_time_s": 45.0
+  }
+}

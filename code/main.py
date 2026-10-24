@@ -1,37 +1,31 @@
+from simulation.simulator import run_simulation
+from metrics.metrics_handler import process_metrics
 import os
-import sys
-import traci
-from incident.incident_manager import IncidentManager
 
-INCIDENT_EDGE = "A2B2"   
+INCIDENT_EDGE = "A2B2" 
+SIM_DURATION = 1000.0  
 BLOCKED_LANE_INDEX = 0          
 INCIDENT_START = 100.0          
 INCIDENT_END = 600.0 
-SUMO_FILE = "./networks/synthetic/synthetic.sumocfg"
+NETWORKS_DIR = "./networks/"
+SUMO_FILE = "synthetic/synthetic.sumocfg"
+OUTPUTS_DIR = "./output/"
+OUTPUT_DIR = os.path.join(OUTPUTS_DIR, "synthetic")
+RESULTS_DIR = "../results"
+RESULT_NAME = "synthetic"
 
-if "SUMO_HOME" in os.environ:
-    tools = os.path.join(os.environ["SUMO_HOME"], "tools")
-    sys.path.append(tools)
-else:
-    sys.exit("Declara la variable de entorno SUMO_HOME")
+sumo_file_path = os.path.join(NETWORKS_DIR, SUMO_FILE)
 
-sumo_binary = "sumo-gui"
-sumo_cmd = [sumo_binary, "-c", SUMO_FILE, "--step-length", "0.1"]
+run_simulation(SIM_DURATION, INCIDENT_EDGE, INCIDENT_START, INCIDENT_END, sumo_file_path, OUTPUT_DIR)
 
-
-traci.start(sumo_cmd)
-
-incident = IncidentManager()
-
-while traci.simulation.getMinExpectedNumber() > 0:
-    current_time = traci.simulation.getTime()
-
-    if current_time == INCIDENT_START:
-        incident.start(INCIDENT_EDGE, BLOCKED_LANE_INDEX)
-
-    if current_time == INCIDENT_END:
-        incident.end()
-
-    traci.simulationStep()
-
-traci.close()
+## Export metrics
+process_metrics(
+    output_dir=OUTPUT_DIR,
+    export_dir=RESULTS_DIR,
+    name=RESULT_NAME,
+    incident_start_s=INCIDENT_START,
+    incident_end_s=INCIDENT_END,
+    sim_duration_seconds=SIM_DURATION,
+    exclude_ids=["veh_bloqueo"],
+    target_detector_ids=["e2_A2B2_0", "e2_A1A2_0", "e2_B1B2_0"],
+)
