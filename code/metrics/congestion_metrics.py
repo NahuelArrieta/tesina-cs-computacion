@@ -11,17 +11,14 @@ def parse_and_compute_congestion_e2(
     congested_queue_threshold_m=20.0,
     baseline_speed_ratio=0.90
 ):
+    interval_data = parse_e2_intervals(e2_xml_path, target_detector_ids, congested_queue_threshold_m)
+    return compute_congestion_metrics(interval_data, incident_start_s, incident_end_s, baseline_speed_ratio)
+
+
+
+def parse_e2_intervals(e2_xml_path, target_detector_ids=None, congested_queue_threshold_m=20.0):
     if not os.path.exists(e2_xml_path):
         raise FileNotFoundError(f"File not found: {e2_xml_path}")
-
-    # Aggregators for summary
-    pre_incident_speeds = []
-    incident_mean_queues = []
-    incident_max_queues = []
-    incident_congested_counts = []
-    
-    recovery_time_s = None
-    timeseries_records = []
 
     # Map intervals: interval_midpoint -> list of detector metrics
     interval_data = {}
@@ -77,30 +74,40 @@ def parse_and_compute_congestion_e2(
 
     del context
 
-    # Process grouped intervals chronologically
+    # Sort the intervals
     sorted_midpoints = sorted(interval_data.keys())
+    sorted_interval_data = {midpoint: interval_data[midpoint] for midpoint in sorted_midpoints}
 
-    for midpoint in sorted_midpoints:
-        data = interval_data[midpoint]
+    return sorted_interval_data
+
+def compute_congestion_metrics(interval_data, incident_start_s, incident_end_s, baseline_speed_ratio=0.90):
+    # Aggregators for summary
+    pre_incident_speeds = []
+    incident_mean_queues = []
+    incident_max_queues = []
+    incident_congested_counts = []
+    
+    recovery_time_s = None
+    baseline_speed = None
+    timeseries_records = []
+
+    for midpoint, data in interval_data.items():
         avg_speed = float(np.mean(data["speeds"])) if data["speeds"] else 0.0
         avg_queue = float(np.mean(data["mean_queues"])) if data["mean_queues"] else 0.0
         peak_queue = float(np.max(data["max_queues"])) if data["max_queues"] else 0.0
         congested_count = data["congested_segments"]
 
+        incident_mean_queues.append(avg_queue)
+        incident_max_queues.append(peak_queue)
+        incident_congested_counts.append(congested_count)
+
         if midpoint < incident_start_s:
-            phase = "pre_incident"
             if data["speeds"]:
                 pre_incident_speeds.append(avg_speed)
 
-        elif incident_start_s <= midpoint <= incident_end_s:
-            phase = "incident"
-            incident_mean_queues.append(avg_queue)
-            incident_max_queues.append(peak_queue)
-            incident_congested_counts.append(congested_count)
-
         else:
-            phase = "post_incident"
-            baseline_speed = float(np.mean(pre_incident_speeds)) if pre_incident_speeds else 10.0
+            if baseline_speed is None:
+                baseline_speed = float(np.mean(pre_incident_speeds)) if pre_incident_speeds else 10.0
             
             # Check recovery condition
             if recovery_time_s is None and avg_speed >= (baseline_speed * baseline_speed_ratio):
@@ -110,7 +117,6 @@ def parse_and_compute_congestion_e2(
             "time_begin_s": data["begin"],
             "time_end_s": data["end"],
             "interval_midpoint_s": midpoint,
-            "phase": phase,
             "mean_speed_mps": round(avg_speed, 3),
             "mean_queue_length_m": round(avg_queue, 2),
             "max_queue_length_m": round(peak_queue, 2),
