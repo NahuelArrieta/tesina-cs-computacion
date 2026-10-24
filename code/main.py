@@ -12,6 +12,7 @@ SUMO_FILE = "synthetic/synthetic.sumocfg"
 OUTPUTS_DIR = "./output/"
 OUTPUT_DIR = os.path.join(OUTPUTS_DIR, "synthetic")
 RESULTS_DIR = "../results"
+RESULT_NAME = "synthetic"
 
 sumo_file_path = os.path.join(NETWORKS_DIR, SUMO_FILE)
 
@@ -21,6 +22,7 @@ run_simulation(SIM_DURATION, INCIDENT_EDGE, INCIDENT_START, INCIDENT_END, sumo_f
 process_metrics(
     output_dir=OUTPUT_DIR,
     export_dir=RESULTS_DIR,
+    name=RESULT_NAME,
     incident_start_s=INCIDENT_START,
     incident_end_s=INCIDENT_END,
     sim_duration_seconds=SIM_DURATION,

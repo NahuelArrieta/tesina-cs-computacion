@@ -74,10 +74,11 @@ def _write_rows(
 def export_metrics(
     metrics: Mapping[str, Any],
     export_dir: str | Path,
+    name: str = "default",
     basename: str = "metrics",
 ) -> dict[str, Path]:
-    """Export summaries to JSON and each time series to its own CSV."""
-    destination = Path(export_dir)
+    """Export summaries and time series under ``<export_dir>/<name>``."""
+    destination = Path(export_dir) / name
     destination.mkdir(parents=True, exist_ok=True)
     json_path = destination / f"{basename}.json"
 
@@ -112,6 +113,7 @@ def process_metrics(
     incident_end_s: float,
     sim_duration_seconds: float = 3600.0,
     export_dir: str | Path | None = None,
+    name: str = "default",
     basename: str = "metrics",
     exclude_ids: Iterable[str] = (),
     target_detector_ids: Sequence[str] | None = None,
@@ -130,4 +132,4 @@ def process_metrics(
         baseline_speed_ratio=baseline_speed_ratio,
     )
     destination = output_dir if export_dir is None else export_dir
-    return metrics, export_metrics(metrics, destination, basename)
+    return metrics, export_metrics(metrics, destination, name, basename)
