@@ -5,6 +5,8 @@ import math
 import networkx as nx
 import sumolib
 
+from asyncio import graph
+
 
 def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float = 7.5) -> nx.DiGraph:
     """
@@ -27,12 +29,18 @@ def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float 
 
         capacity = num_lanes * math.floor(length / effective_veh_length_m)
 
+        shape = edge.getShape() 
+        mid_idx = len(shape) // 2
+        x_pos, y_pos = shape[mid_idx]
+
         graph.add_node(
             edge_id,
             length_m=round(length, 2),
             speed_limit_mps=round(speed_limit, 2),
             num_lanes=num_lanes,
-            capacity_veh=int(capacity)
+            capacity_veh=int(capacity),
+            x=float(round(x_pos, 2)),
+            y=float(round(y_pos, 2))
         )
 
     # Add edges (allowed maneuvers between edges)
