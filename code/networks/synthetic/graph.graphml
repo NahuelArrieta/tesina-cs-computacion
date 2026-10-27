@@ -1,0 +1,1792 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d6" for="edge" attr.name="direction" attr.type="string" />
+  <key id="d5" for="edge" attr.name="weight" attr.type="double" />
+  <key id="d4" for="edge" attr.name="raw_count" attr.type="long" />
+  <key id="d3" for="node" attr.name="capacity_veh" attr.type="long" />
+  <key id="d2" for="node" attr.name="num_lanes" attr.type="long" />
+  <key id="d1" for="node" attr.name="speed_limit_mps" attr.type="double" />
+  <key id="d0" for="node" attr.name="length_m" attr.type="double" />
+  <graph edgedefault="directed">
+    <node id="A0A1">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="A0B0">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="A1A0">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="A1A2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="A1B1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="A2A1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="A2A3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="A2B2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="A3A2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="A3A4">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="A3B3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="A4A3">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="A4B4">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="B0A0">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="B0B1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B0C0">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B1A1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B1B0">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B1B2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B1C1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B2A2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B2B1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B2B3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B2C2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B3A3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B3B2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B3B4">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B3C3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B4A4">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="B4B3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="B4C4">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C0B0">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C0C1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C0D0">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C1B1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C1C0">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C1C2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C1D1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C2B2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C2C1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C2C3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C2D2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C3B3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C3C2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C3C4">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C3D3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C4B4">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C4C3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="C4D4">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D0C0">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D0D1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D0E0">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="D1C1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D1D0">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D1D2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D1E1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D2C2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D2D1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D2D3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D2E2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D3C3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D3D2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D3D4">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D3E3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D4C4">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D4D3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="D4E4">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="E0D0">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="E0E1">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="E1D1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="E1E0">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="E1E2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="E2D2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="E2E1">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="E2E3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="E3D3">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="E3E2">
+      <data key="d0">179.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">46</data>
+    </node>
+    <node id="E3E4">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="E4D4">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <node id="E4E3">
+      <data key="d0">183.2</data>
+      <data key="d1">13.89</data>
+      <data key="d2">2</data>
+      <data key="d3">48</data>
+    </node>
+    <edge source="A0A1" target="A1B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="A0A1" target="A1A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A0A1" target="A1A0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A0B0" target="B0C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A0B0" target="B0B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="A0B0" target="B0A0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A1A0" target="A0B0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="A1A2" target="A2B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="A1A2" target="A2A3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A1A2" target="A2A1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A1B1" target="B1B0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="A1B1" target="B1C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A1B1" target="B1B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="A1B1" target="B1A1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A2A1" target="A1A0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A2A1" target="A1B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="A2A1" target="A1A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A2A3" target="A3B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="A2A3" target="A3A4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A2A3" target="A3A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A2B2" target="B2B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="A2B2" target="B2C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A2B2" target="B2B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="A2B2" target="B2A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A3A2" target="A2A1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A3A2" target="A2B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="A3A2" target="A2A3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A3A4" target="A4B4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="A3B3" target="B3B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="A3B3" target="B3C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A3B3" target="B3B4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="A3B3" target="B3A3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A4A3" target="A3A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A4A3" target="A3B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="A4A3" target="A3A4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="A4B4" target="B4B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="A4B4" target="B4C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="A4B4" target="B4A4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B0A0" target="A0A1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B0B1" target="B1C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B0B1" target="B1B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B0B1" target="B1A1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B0B1" target="B1B0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B0C0" target="C0D0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B0C0" target="C0C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B0C0" target="C0B0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B1A1" target="A1A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B1A1" target="A1A0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B1A1" target="A1B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B1B0" target="B0A0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B1B0" target="B0C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B1B0" target="B0B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B1B2" target="B2C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B1B2" target="B2B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B1B2" target="B2A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B1B2" target="B2B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B1C1" target="C1C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B1C1" target="C1D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B1C1" target="C1C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B1C1" target="C1B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B2A2" target="A2A3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B2A2" target="A2A1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B2A2" target="A2B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B2B1" target="B1A1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B2B1" target="B1B0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B2B1" target="B1C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B2B1" target="B1B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B2B3" target="B3C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B2B3" target="B3B4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B2B3" target="B3A3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B2B3" target="B3B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B2C2" target="C2C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B2C2" target="C2D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B2C2" target="C2C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B2C2" target="C2B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B3A3" target="A3A4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B3A3" target="A3A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B3A3" target="A3B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B3B2" target="B2A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B3B2" target="B2B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B3B2" target="B2C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B3B2" target="B2B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B3B4" target="B4C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B3B4" target="B4A4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B3B4" target="B4B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B3C3" target="C3C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B3C3" target="C3D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B3C3" target="C3C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B3C3" target="C3B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B4A4" target="A4A3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B4B3" target="B3A3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B4B3" target="B3B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B4B3" target="B3C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="B4B3" target="B3B4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="B4C4" target="C4C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="B4C4" target="C4D4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="B4C4" target="C4B4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C0B0" target="B0B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C0B0" target="B0A0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C0B0" target="B0C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C0C1" target="C1D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C0C1" target="C1C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C0C1" target="C1B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C0C1" target="C1C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C0D0" target="D0E0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C0D0" target="D0D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C0D0" target="D0C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C1B1" target="B1B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C1B1" target="B1A1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C1B1" target="B1B0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C1B1" target="B1C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C1C0" target="C0B0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C1C0" target="C0D0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C1C0" target="C0C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C1C2" target="C2D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C1C2" target="C2C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C1C2" target="C2B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C1C2" target="C2C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C1D1" target="D1D0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C1D1" target="D1E1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C1D1" target="D1D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C1D1" target="D1C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C2B2" target="B2B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C2B2" target="B2A2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C2B2" target="B2B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C2B2" target="B2C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C2C1" target="C1B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C2C1" target="C1C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C2C1" target="C1D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C2C1" target="C1C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C2C3" target="C3D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C2C3" target="C3C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C2C3" target="C3B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C2C3" target="C3C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C2D2" target="D2D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C2D2" target="D2E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C2D2" target="D2D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C2D2" target="D2C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C3B3" target="B3B4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C3B3" target="B3A3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C3B3" target="B3B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C3B3" target="B3C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C3C2" target="C2B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C3C2" target="C2C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C3C2" target="C2D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C3C2" target="C2C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C3C4" target="C4D4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C3C4" target="C4B4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C3C4" target="C4C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C3D3" target="D3D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C3D3" target="D3E3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C3D3" target="D3D4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C3D3" target="D3C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C4B4" target="B4A4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C4B4" target="B4B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C4B4" target="B4C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C4C3" target="C3B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C4C3" target="C3C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C4C3" target="C3D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="C4C3" target="C3C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="C4D4" target="D4D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="C4D4" target="D4E4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="C4D4" target="D4C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D0C0" target="C0C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D0C0" target="C0B0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D0C0" target="C0D0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D0D1" target="D1E1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D0D1" target="D1D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D0D1" target="D1C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D0D1" target="D1D0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D0E0" target="E0E1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D1C1" target="C1C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D1C1" target="C1B1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D1C1" target="C1C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D1C1" target="C1D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D1D0" target="D0C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D1D0" target="D0E0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D1D0" target="D0D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D1D2" target="D2E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D1D2" target="D2D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D1D2" target="D2C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D1D2" target="D2D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D1E1" target="E1E0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D1E1" target="E1E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D1E1" target="E1D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D2C2" target="C2C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D2C2" target="C2B2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D2C2" target="C2C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D2C2" target="C2D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D2D1" target="D1C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D2D1" target="D1D0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D2D1" target="D1E1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D2D1" target="D1D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D2D3" target="D3E3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D2D3" target="D3D4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D2D3" target="D3C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D2D3" target="D3D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D2E2" target="E2E1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D2E2" target="E2E3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D2E2" target="E2D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D3C3" target="C3C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D3C3" target="C3B3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D3C3" target="C3C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D3C3" target="C3D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D3D2" target="D2C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D3D2" target="D2D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D3D2" target="D2E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D3D2" target="D2D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D3D4" target="D4E4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D3D4" target="D4C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D3D4" target="D4D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D3E3" target="E3E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D3E3" target="E3E4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D3E3" target="E3D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D4C4" target="C4B4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D4C4" target="C4C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D4C4" target="C4D4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D4D3" target="D3C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="D4D3" target="D3D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="D4D3" target="D3E3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="D4D3" target="D3D4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="D4E4" target="E4E3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="E0D0" target="D0D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="E0D0" target="D0C0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E0D0" target="D0E0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E0E1" target="E1E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E0E1" target="E1D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="E0E1" target="E1E0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E1D1" target="D1D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="E1D1" target="D1C1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E1D1" target="D1D0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="E1D1" target="D1E1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E1E0" target="E0D0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="E1E2" target="E2E3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E1E2" target="E2D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="E1E2" target="E2E1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E2D2" target="D2D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="E2D2" target="D2C2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E2D2" target="D2D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="E2D2" target="D2E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E2E1" target="E1D1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="E2E1" target="E1E0">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E2E1" target="E1E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E2E3" target="E3E4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E2E3" target="E3D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="E2E3" target="E3E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E3D3" target="D3D4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="E3D3" target="D3C3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E3D3" target="D3D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="E3D3" target="D3E3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E3E2" target="E2D2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="E3E2" target="E2E1">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E3E2" target="E2E3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E3E4" target="E4D4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="E4D4" target="D4C4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E4D4" target="D4D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">l</data>
+    </edge>
+    <edge source="E4D4" target="D4E4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+    <edge source="E4E3" target="E3D3">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">r</data>
+    </edge>
+    <edge source="E4E3" target="E3E2">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">s</data>
+    </edge>
+    <edge source="E4E3" target="E3E4">
+      <data key="d4">0</data>
+      <data key="d5">0.0</data>
+      <data key="d6">t</data>
+    </edge>
+  </graph>
+</graphml>
