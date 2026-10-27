@@ -24,11 +24,18 @@ def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float 
         speed_limit = float(edge.getSpeed())
         num_lanes = int(edge.getLaneNumber())
 
+        dx, dy = get_edge_direction(edge)
+
         capacity = num_lanes * math.floor(length / effective_veh_length_m)
 
         shape = edge.getShape()  # [(x1, y1), (x2, y2)]
         x_mid = (shape[0][0] + shape[-1][0]) / 2.0
         y_mid = (shape[0][1] + shape[-1][1]) / 2.0
+
+        x_pos = float(round(x_mid, 2) * 2 + dx * 10)  # Adjust x based on direction
+        y_pos = float(round(y_mid, 2) * 2 + dy * 10)  # Adjust y based on direction
+
+        print(f"[INFO] Adding node: {edge_id}, x={x_pos}, y={y_pos}, dx={dx}, dy={dy}, x_mid={x_mid}, y_mid={y_mid}, length={length}")
 
         graph.add_node(
             edge_id,
@@ -36,8 +43,8 @@ def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float 
             speed_limit_mps=round(speed_limit, 2),
             num_lanes=num_lanes,
             capacity_veh=int(capacity),
-            x=float(round(x_mid, 2)),
-            y=float(round(y_mid, 2))
+            x=x_pos,
+            y=y_pos
         )
 
     # Add edges (allowed maneuvers between edges)
@@ -100,6 +107,22 @@ def compute_turning_counts(routes_xml_path: str) -> dict:
 
     del context
     return transition_counts
+
+def get_edge_direction(edge: sumolib.net.edge) -> tuple[int, int]:
+    """
+    Returns the direction vector (dx, dy) of a SUMO edge based on its shape.
+    """
+    shape = edge.getShape()
+    if len(shape) < 2:
+        return (0, 0)
+    x1, y1 = shape[0]
+    x2, y2 = shape[-1]
+
+
+    dx = 1 if x2 > x1 else -1 if x2 < x1 else 0
+    dy = 1 if y2 > y1 else -1 if y2 < y1 else 0
+    
+    return (dx, dy)
 
 
 def assign_turning_probabilities(graph: nx.DiGraph, turning_counts: dict) -> nx.DiGraph:
