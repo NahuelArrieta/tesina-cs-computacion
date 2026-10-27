@@ -43,7 +43,9 @@ def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float 
             num_lanes=num_lanes,
             capacity_veh=int(capacity),
             x=x_pos,
-            y=y_pos
+            y=y_pos,
+            dx=dx,
+            dy=dy
         )
 
     # Add edges (allowed maneuvers between edges)
