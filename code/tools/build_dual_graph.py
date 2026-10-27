@@ -5,9 +5,6 @@ import math
 import networkx as nx
 import sumolib
 
-from asyncio import graph
-
-
 def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float = 7.5) -> nx.DiGraph:
     """
     Parses the SUMO network using sumolib and constructs the dual graph topology.

@@ -3,8 +3,8 @@
   <key id="d8" for="edge" attr.name="direction" attr.type="string" />
   <key id="d7" for="edge" attr.name="weight" attr.type="double" />
   <key id="d6" for="edge" attr.name="raw_count" attr.type="long" />
-  <key id="d5" for="node" attr.name="Y" attr.type="double" />
-  <key id="d4" for="node" attr.name="X" attr.type="double" />
+  <key id="d5" for="node" attr.name="y" attr.type="double" />
+  <key id="d4" for="node" attr.name="x" attr.type="double" />
   <key id="d3" for="node" attr.name="capacity_veh" attr.type="long" />
   <key id="d2" for="node" attr.name="num_lanes" attr.type="long" />
   <key id="d1" for="node" attr.name="speed_limit_mps" attr.type="double" />
