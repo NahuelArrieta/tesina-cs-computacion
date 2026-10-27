@@ -33,7 +33,7 @@ def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float 
         y_mid = (shape[0][1] + shape[-1][1]) / 2.0
 
         x_pos = float(round(x_mid, 2) * 2 + dx * 10)  # Adjust x based on direction
-        y_pos = float(round(y_mid, 2) * 2 + dy * 10)  # Adjust y based on direction
+        y_pos = -float(round(y_mid, 2) * 2 + dy * 10)  # Adjust y based on direction
 
         graph.add_node(
             edge_id,
