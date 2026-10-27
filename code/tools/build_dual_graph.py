@@ -35,10 +35,9 @@ def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float 
         x_pos = float(round(x_mid, 2) * 2 + dx * 10)  # Adjust x based on direction
         y_pos = float(round(y_mid, 2) * 2 + dy * 10)  # Adjust y based on direction
 
-        print(f"[INFO] Adding node: {edge_id}, x={x_pos}, y={y_pos}, dx={dx}, dy={dy}, x_mid={x_mid}, y_mid={y_mid}, length={length}")
-
         graph.add_node(
             edge_id,
+            name=f"{edge_id}_{get_direction_string(dx, dy)}",
             length_m=round(length, 2),
             speed_limit_mps=round(speed_limit, 2),
             num_lanes=num_lanes,
@@ -123,6 +122,28 @@ def get_edge_direction(edge: sumolib.net.edge) -> tuple[int, int]:
     dy = 1 if y2 > y1 else -1 if y2 < y1 else 0
     
     return (dx, dy)
+
+def get_direction_string(dx: int, dy: int) -> str:
+    """
+    Converts a direction vector (dx, dy) into a string representation.
+    """
+    dir_str = ""
+    if dy > 0:
+        dir_str += "n"
+    elif dy < 0:
+        dir_str += "s"
+
+    if dx > 0:
+        dir_str += "e"
+    elif dx < 0:
+        dir_str += "w"
+
+    if dir_str == "":
+        dir_str = "_"  
+
+    return dir_str
+
+    
 
 
 def assign_turning_probabilities(graph: nx.DiGraph, turning_counts: dict) -> nx.DiGraph:
