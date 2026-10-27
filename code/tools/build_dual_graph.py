@@ -102,12 +102,12 @@ def assign_turning_probabilities(graph: nx.DiGraph, turning_counts: dict) -> nx.
     Assigns static turning ratios (beta_ij) as edge weights by normalizing
     observed vehicular transition counts per origin node.
     """
-    # 1. Inject raw transition counts into existing topological edges
+    # Inject raw transition counts into existing topological edges
     for (u, v), count in turning_counts.items():
         if graph.has_edge(u, v):
             graph[u][v]["raw_count"] = int(count)
 
-    # 2. Normalize probabilities per origin node
+    # Normalize probabilities per origin node
     for u in graph.nodes():
         successors = list(graph.successors(u))
         if not successors:
@@ -202,15 +202,15 @@ def main():
     g = build_topological_skeleton(args.net)
     print(f"Topological base built: {g.number_of_nodes()} nodes, {g.number_of_edges()} edges.")
 
-    # print("--- Extracting Turning Counts from Demand ---")
-    # counts = compute_turning_counts(args.routes)
-    # print(f"Distinct maneuvers with observed demand: {len(counts)}")
+    print("--- Extracting Turning Counts from Demand ---")
+    counts = compute_turning_counts(args.routes)
+    print(f"Distinct maneuvers with observed demand: {len(counts)}")
 
-    # print("--- Assigning Static Turning Ratios (Weights) ---")
-    # g = assign_turning_probabilities(g, counts)
-    # if not validate_graph(g):
-    #     print("[ERROR] Graph validation failed: some nodes have turning probabilities that do not sum to 1.0")
-    #     exit(1)
+    print("--- Assigning Static Turning Ratios (Weights) ---")
+    g = assign_turning_probabilities(g, counts)
+    if not validate_graph(g):
+        print("[ERROR] Graph validation failed: some nodes have turning probabilities that do not sum to 1.0")
+        exit(1)
 
     print("--- Exporting GraphML ---")
     export_dual_graph(g, args.output)
