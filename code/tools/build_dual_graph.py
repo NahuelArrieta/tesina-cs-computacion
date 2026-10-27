@@ -26,9 +26,9 @@ def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float 
 
         capacity = num_lanes * math.floor(length / effective_veh_length_m)
 
-        shape = edge.getShape() 
-        mid_idx = len(shape) // 2
-        x_pos, y_pos = shape[mid_idx]
+        shape = edge.getShape()  # [(x1, y1), (x2, y2)]
+        x_mid = (shape[0][0] + shape[-1][0]) / 2.0
+        y_mid = (shape[0][1] + shape[-1][1]) / 2.0
 
         graph.add_node(
             edge_id,
@@ -36,8 +36,8 @@ def build_topological_skeleton(net_xml_path: str, effective_veh_length_m: float 
             speed_limit_mps=round(speed_limit, 2),
             num_lanes=num_lanes,
             capacity_veh=int(capacity),
-            x=float(round(x_pos, 2)),
-            y=float(round(y_pos, 2))
+            x=float(round(x_mid, 2)),
+            y=float(round(y_mid, 2))
         )
 
     # Add edges (allowed maneuvers between edges)
