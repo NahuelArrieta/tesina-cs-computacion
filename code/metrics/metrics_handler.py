@@ -62,7 +62,7 @@ def collect_metrics(
         "stability": stability,
         "stability_timeseries": stability_steps,
         "congestion": congestion_per_zone,
-        "congestion_timeseries": congestion_timeseries["other_zones"]
+        "congestion_timeseries": congestion_timeseries,
     }
 
 
@@ -104,23 +104,29 @@ def export_metrics(
         json_file.write("\n")
 
     output_paths = {"json": json_path}
-    series_files = {
-        "stability_timeseries": (
-            f"{basename}_stability_by_step.csv",
-            ("time",),
-        ),
-        "congestion_timeseries": (
-            f"{basename}_congestion_by_interval.csv",
-            ("time_begin_s", "time_end_s", "interval_midpoint_s"),
-        ),
-    }
-    for series_name, (filename, first_columns) in series_files.items():
-        path = destination / filename
-        rows = metrics.get(series_name, [])
+    stability_path = destination / f"{basename}_stability_by_step.csv"
+    stability_rows = metrics.get("stability_timeseries", [])
+    if not isinstance(stability_rows, list):
+        raise TypeError("stability_timeseries must be a list of row records")
+    _write_rows(stability_rows, stability_path, ("time",))
+    output_paths["stability_timeseries"] = stability_path
+
+    congestion_timeseries = metrics.get("congestion_timeseries", {})
+    if not isinstance(congestion_timeseries, Mapping):
+        raise TypeError("congestion_timeseries must be a mapping of zones to row records")
+
+    for zone, rows in congestion_timeseries.items():
+        if not isinstance(zone, str):
+            raise TypeError("congestion_timeseries zone names must be strings")
         if not isinstance(rows, list):
-            raise TypeError(f"{series_name} must be a list of row records")
-        _write_rows(rows, path, first_columns)
-        output_paths[series_name] = path
+            raise TypeError(f"congestion_timeseries[{zone!r}] must be a list of row records")
+        path = destination / f"{basename}_congestion_{zone}_by_interval.csv"
+        _write_rows(
+            rows,
+            path,
+            ("time_begin_s", "time_end_s", "interval_midpoint_s"),
+        )
+        output_paths[f"congestion_timeseries[{zone}]"] = path
 
     return output_paths
 
