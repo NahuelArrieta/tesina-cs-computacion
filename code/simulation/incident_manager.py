@@ -1,5 +1,5 @@
 import traci
-from utils.logs import log
+from .logs import log
 
 
 class IncidentManager:
