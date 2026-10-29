@@ -26,21 +26,21 @@ subgraph = extract_upstream_subgraph(
     graph=graph,
     incident_edge=INCIDENT_EDGE,
     min_prob_threshold=0.05,
-    max_seconds_travel=10.0
+    max_seconds_travel=100.0
 )
 
-export_dual_graph(subgraph, os.path.join(OUTPUT_DIR, "subgraph.graphml"))
+# export_dual_graph(subgraph, os.path.join(OUTPUT_DIR, "subgraph.graphml"))
 
 # run_simulation(SIM_DURATION, INCIDENT_EDGE, INCIDENT_START, INCIDENT_END, sumo_file_path, OUTPUT_DIR)
 
-# ## Export metrics
-# process_metrics(
-#     output_dir=OUTPUT_DIR,
-#     export_dir=RESULTS_DIR,
-#     name=RESULT_NAME,
-#     incident_start_s=INCIDENT_START,
-#     incident_end_s=INCIDENT_END,
-#     sim_duration_seconds=SIM_DURATION,
-#     exclude_ids=["veh_bloqueo"],
-#     target_detector_ids=["e2_A2B2_0", "e2_A1A2_0", "e2_B1B2_0"],
-# )
+## Export metrics
+process_metrics(
+    incident_edge=INCIDENT_EDGE,
+    output_dir=OUTPUT_DIR,
+    export_dir=RESULTS_DIR,
+    name=RESULT_NAME,
+    incident_start_s=INCIDENT_START,
+    incident_end_s=INCIDENT_END,
+    sim_duration_seconds=SIM_DURATION,
+    exclude_ids=["veh_bloqueo"],
+)

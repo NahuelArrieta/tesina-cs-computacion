@@ -100,6 +100,11 @@ def extract_upstream_subgraph(
 
     return subgraph
 
+def get_upstream_nodes(subgraph: nx.DiGraph) -> Set[str]:
+    """
+    Returns the set of upstream nodes in the subgraph.
+    """
+    return set(subgraph.nodes())
 
 def get_alternative_routes(graph: nx.DiGraph, subgraph: nx.DiGraph) -> Set[str]:
     """
@@ -122,3 +127,34 @@ def get_alternative_routes(graph: nx.DiGraph, subgraph: nx.DiGraph) -> Set[str]:
                 alternative_routes.add(succ_node)
 
     return alternative_routes
+
+
+def get_zones(graph: nx.DiGraph, incident_edge: str) -> Dict[str, List[str]]:
+    """
+    Categorizes nodes in the subgraph into zones based on their proximity to the incident edge.
+
+    Returns:
+        zones: Dictionary mapping zone names to lists of node IDs.
+    """
+    
+    subgraph: nx.DiGraph = extract_upstream_subgraph(
+        graph=graph,
+        incident_edge=incident_edge
+    )
+
+    incident_street_nodes = {incident_edge}
+
+    upstream_nodes = set(subgraph.nodes())
+
+    alternative_routes = get_alternative_routes(graph, subgraph)
+
+    used_nodes = incident_street_nodes.union(upstream_nodes).union(alternative_routes)
+    all_nodes = set(graph.nodes()).difference(used_nodes)
+
+    zones = {
+        "incident_street": list(incident_street_nodes),
+        "upstream_streets": list(upstream_nodes),
+        "alternative_routes": list(alternative_routes),
+        "other_zones": list(all_nodes),
+    }
+    return zones

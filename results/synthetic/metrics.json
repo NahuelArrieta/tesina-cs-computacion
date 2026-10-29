@@ -44,10 +44,33 @@
     }
   },
   "congestion": {
-    "mean_queue_length_m": 4.28,
-    "max_queue_length_m": 89.6,
-    "mean_congested_segments": 0.29,
-    "max_congested_segments": 1,
-    "network_recovery_time_s": 30.0
+    "incident_street": {
+      "mean_queue_length_m": 6.24,
+      "max_queue_length_m": 89.6,
+      "mean_congested_segments": 0.29,
+      "max_congested_segments": 1,
+      "network_recovery_time_s": 30.0
+    },
+    "upstream_streets": {
+      "mean_queue_length_m": 0.73,
+      "max_queue_length_m": 89.6,
+      "mean_congested_segments": 0.29,
+      "max_congested_segments": 1,
+      "network_recovery_time_s": -390.0
+    },
+    "alternative_routes": {
+      "mean_queue_length_m": 0.36,
+      "max_queue_length_m": 26.33,
+      "mean_congested_segments": 0.0,
+      "max_congested_segments": 0,
+      "network_recovery_time_s": -390.0
+    },
+    "other_zones": {
+      "mean_queue_length_m": 0.33,
+      "max_queue_length_m": 24.31,
+      "mean_congested_segments": 0.0,
+      "max_congested_segments": 0,
+      "network_recovery_time_s": 150.0
+    }
   }
 }

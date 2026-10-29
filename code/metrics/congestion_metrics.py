@@ -7,18 +7,29 @@ def parse_and_compute_congestion_e2(
     e2_xml_path,
     incident_start_s,
     incident_end_s,
-    target_detector_ids=None,
+    streets_zones=dict[str, list[str]],
     congested_queue_threshold_m=20.0,
     baseline_speed_ratio=0.90
 ):
-    interval_data = parse_e2_intervals(e2_xml_path, target_detector_ids, congested_queue_threshold_m)
-    return compute_congestion_metrics(interval_data, incident_start_s, incident_end_s, baseline_speed_ratio)
+
+    summary_congestion_per_zone = {}
+    timeseries_records_per_zone = {}
+    
+    for zone, street_ids in streets_zones.items():
+        interval_data = parse_e2_intervals(e2_xml_path, street_ids, congested_queue_threshold_m)
+        summary_congestion, timeseries_records = compute_congestion_metrics(interval_data, incident_start_s, incident_end_s, baseline_speed_ratio)
+        summary_congestion_per_zone[zone] = summary_congestion
+        timeseries_records_per_zone[zone] = timeseries_records
+
+    return summary_congestion_per_zone, timeseries_records_per_zone
 
 
 
-def parse_e2_intervals(e2_xml_path, target_detector_ids=None, congested_queue_threshold_m=20.0):
+
+def parse_e2_intervals(e2_xml_path, street_ids, congested_queue_threshold_m=20.0):
     if not os.path.exists(e2_xml_path):
         raise FileNotFoundError(f"File not found: {e2_xml_path}")
+
 
     # Map intervals: interval_midpoint -> list of detector metrics
     interval_data = {}
@@ -29,7 +40,10 @@ def parse_e2_intervals(e2_xml_path, target_detector_ids=None, congested_queue_th
         if elem.tag == "interval":
             det_id = elem.get("id")
 
-            if target_detector_ids is not None and det_id not in target_detector_ids:
+            ## Check if the detector ID corresponds to any of the street IDs in the zone
+            ## Detector has the format "detector_<street_id>_<index>", so we check if any street_id is a substring of det_id
+            current_street_id = det_id.split("_")[1] if "_" in det_id else None
+            if current_street_id not in street_ids:
                 elem.clear()
                 continue
 

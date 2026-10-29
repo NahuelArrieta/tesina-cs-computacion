@@ -1,8 +1,11 @@
 import csv
 import json
+import os
+import networkx as Nx
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
-
+from utils.dual_graph_handler import load_dual_graph
+from utils.subgraph_extractor import get_zones
 from .congestion_metrics import parse_and_compute_congestion_e2
 from .efficiency_metrics import compute_network_efficiency, parse_tripinfo
 from .stability_metrics import parse_and_compute_phased_stability
@@ -12,12 +15,13 @@ MetricData = dict[str, Any]
 
 
 def collect_metrics(
+    incident_edge: str,
     output_dir: str | Path,
     incident_start_s: float,
     incident_end_s: float,
-    sim_duration_seconds: float = 3600.0,
+    sim_duration_seconds: float,
+    graph: Nx.DiGraph,
     exclude_ids: Iterable[str] = (),
-    target_detector_ids: Sequence[str] | None = None,
     congested_queue_threshold_m: float = 20.0,
     baseline_speed_ratio: float = 0.90,
 ) -> MetricData:
@@ -41,11 +45,14 @@ def collect_metrics(
         phase_windows,
         excluded,
     )
-    congestion, congestion_timeseries = parse_and_compute_congestion_e2(
+
+    zone_streets = get_zones(graph, incident_edge=incident_edge)
+
+    congestion_per_zone, congestion_timeseries = parse_and_compute_congestion_e2(
         output_path / "e2_output.xml",
         incident_start_s,
         incident_end_s,
-        target_detector_ids,
+        zone_streets,
         congested_queue_threshold_m,
         baseline_speed_ratio,
     )
@@ -54,8 +61,8 @@ def collect_metrics(
         "efficiency": efficiency,
         "stability": stability,
         "stability_timeseries": stability_steps,
-        "congestion": congestion,
-        "congestion_timeseries": congestion_timeseries,
+        "congestion": congestion_per_zone,
+        "congestion_timeseries": congestion_timeseries["other_zones"]
     }
 
 
@@ -119,26 +126,29 @@ def export_metrics(
 
 
 def process_metrics(
+    incident_edge: str,
     output_dir: str | Path,
     incident_start_s: float,
     incident_end_s: float,
-    sim_duration_seconds: float = 3600.0,
+    sim_duration_seconds: float,
     export_dir: str | Path | None = None,
     name: str = "default",
     basename: str = "metrics",
     exclude_ids: Iterable[str] = (),
-    target_detector_ids: Sequence[str] | None = None,
     congested_queue_threshold_m: float = 20.0,
     baseline_speed_ratio: float = 0.90,
 ) -> tuple[MetricData, dict[str, Path]]:
     """Compute all metrics and export them, returning data and output paths."""
+    graph = load_dual_graph(os.path.join(output_dir, "graph.graphml"))
+
     metrics = collect_metrics(
+        incident_edge=incident_edge,
         output_dir=output_dir,
         incident_start_s=incident_start_s,
         incident_end_s=incident_end_s,
         sim_duration_seconds=sim_duration_seconds,
+        graph=graph,
         exclude_ids=exclude_ids,
-        target_detector_ids=target_detector_ids,
         congested_queue_threshold_m=congested_queue_threshold_m,
         baseline_speed_ratio=baseline_speed_ratio,
     )
