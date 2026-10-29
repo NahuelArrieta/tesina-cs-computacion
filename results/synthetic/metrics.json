@@ -44,10 +44,10 @@
     }
   },
   "congestion": {
-    "mean_queue_length_m": 5.39,
-    "max_queue_length_m": 93.6,
-    "mean_congested_segments": 0.26,
+    "mean_queue_length_m": 4.28,
+    "max_queue_length_m": 89.6,
+    "mean_congested_segments": 0.29,
     "max_congested_segments": 1,
-    "network_recovery_time_s": 45.0
+    "network_recovery_time_s": 30.0
   }
 }
