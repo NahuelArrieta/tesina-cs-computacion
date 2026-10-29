@@ -40,35 +40,26 @@ def extract_upstream_subgraph(
     graph: nx.DiGraph,
     incident_edge: str,
     min_prob_threshold: float = 0.05,
-    max_seconds_travel: float = 10.0,
+    max_seconds_travel: float = 180.0,
+    intersection_delay: float = 10.0,
 ) -> nx.DiGraph:
     """
-    Performs backward search upstream from incident_edge based on turning probabilities.
-
-    Args:
-        graph: Full dual directed graph where nodes are edges and edges are turns with 'weight'.
-        incident_edge: Target edge ID where the incident occurs.
-        min_prob_threshold: Cumulative turning probability threshold to prune branches.
-        max_seconds_travel: Maximum travel time in seconds to limit the upstream traffic to arrival.
-        
-    Returns:
-        induced_subgraph: NetworkX DiGraph containing the upstream basin.
+    Performs backward search upstream from incident_edge based on turning probabilities
+    and free-flow travel time constraints.
     """
     if incident_edge not in graph:
         raise ValueError(f"Incident edge '{incident_edge}' not found in the provided graph.")
 
     priority_queue = MaxPriorityQueue()
-    priority_queue.put(1.0, 0, incident_edge)
+    priority_queue.put(1.0, 0.0, incident_edge)
     
-    # Track the highest accumulated probability reached for each node
-    best_prob: Dict[str, float] = {incident_edge: 1.0}
-    upstream_nodes: Set[str] = {incident_edge}
+    best_state: Dict[str, Tuple[float, float]] = {incident_edge: (1.0, 0.0)}
 
     while priority_queue:
-        current_prob, seconds_traveled, current_node = priority_queue.get()
+        current_prob, current_time, current_node = priority_queue.get()
 
-        # Check max seconds constraint
-        if seconds_traveled >= max_seconds_travel:
+        # If a strictly better path to current_node was already processed, skip stale entry
+        if current_prob < best_state[current_node][0]:
             continue
 
         for pred_node in graph.predecessors(current_node):
@@ -76,29 +67,38 @@ def extract_upstream_subgraph(
             node_data = graph.nodes[pred_node]
             
             turn_prob = float(edge_data.get("weight", 0.0))
-
-            # Calculate cumulative probability of reaching the bottleneck via this maneuver
             accumulated_prob = current_prob * turn_prob
 
-            # Prune marginal influence paths
+            # Prune by turning probability
             if accumulated_prob < min_prob_threshold:
                 continue
 
-            # Relaxation step: update if a higher probability path is found
-            if accumulated_prob > best_prob.get(pred_node, 0.0):
-                current_seconds = float(node_data.get("length_m", 0.0)) / float(node_data.get("speed_limit_mps", 1.0))
-                new_seconds_traveled = seconds_traveled + current_seconds
-                best_prob[pred_node] = accumulated_prob
-                upstream_nodes.add(pred_node)
-                priority_queue.put(accumulated_prob, new_seconds_traveled, pred_node)
+            length_m = float(node_data.get("length_m", 0.0))
+            speed_limit = float(node_data.get("speed_limit_mps", 13.89))
+            seg_travel_time = length_m / speed_limit if speed_limit > 0 else 0.0
+            
+            new_travel_time = current_time + seg_travel_time + intersection_delay
 
+            # Prune strictly by travel time horizon BEFORE including the node
+            if new_travel_time > max_seconds_travel:
+                continue
+
+            # Relaxation step: update if we found a path with higher upstream probability
+            prev_best_prob, _ = best_state.get(pred_node, (0.0, float("inf")))
+            if accumulated_prob > prev_best_prob:
+                best_state[pred_node] = (accumulated_prob, new_travel_time)
+                priority_queue.put(accumulated_prob, new_travel_time, pred_node)
+
+    # Induce subgraph strictly with valid reaching nodes
+    upstream_nodes = set(best_state.keys())
     subgraph = graph.subgraph(upstream_nodes).copy()
 
     for node in subgraph.nodes():
-        subgraph.nodes[node]["upstream_prob"] = round(best_prob.get(node, 0.0), 4)
+        prob, travel_t = best_state[node]
+        subgraph.nodes[node]["upstream_prob"] = round(prob, 4)
+        subgraph.nodes[node]["travel_time_s"] = round(travel_t, 2)
 
     return subgraph
-
 
 
 def get_alternative_routes(graph: nx.DiGraph, subgraph: nx.DiGraph) -> Set[str]:
