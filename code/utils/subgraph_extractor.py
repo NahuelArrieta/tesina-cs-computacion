@@ -68,7 +68,6 @@ def extract_upstream_subgraph(
         current_prob, seconds_traveled, current_node = priority_queue.get()
 
         # Check max seconds constraint
-        print(f"Seconds traveled to {current_node}: {seconds_traveled:.2f}")
         if seconds_traveled >= max_seconds_travel:
             continue
 
