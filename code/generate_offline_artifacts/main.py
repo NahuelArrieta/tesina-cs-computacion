@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +18,7 @@ from generate_offline_artifacts.build_dual_graph import (
     parse_routes_xml,
 )
 from generate_offline_artifacts.generate_detectors import generate_e2_detectors
+from generate_offline_artifacts.sumo_config import write_sumo_config
 from utils.dual_graph_handler import (
     assign_turning_probabilities,
     build_dual_graph,
@@ -53,33 +53,8 @@ def _load_base_manifest(manifest_file: Path) -> dict[str, dict[str, str]]:
     return scenarios
 
 
-def _write_sumo_config(
-    output_file: Path,
-    network_file: Path,
-    routes_file: Path,
-    detectors_file: Path,
-    simulation: dict[str, Any],
-) -> None:
-    root = ET.Element("configuration")
-    input_node = ET.SubElement(root, "input")
-    ET.SubElement(input_node, "net-file", {"value": str(network_file)})
-    ET.SubElement(input_node, "route-files", {"value": str(routes_file)})
-    ET.SubElement(input_node, "additional-files", {"value": str(detectors_file)})
-    time_node = ET.SubElement(root, "time")
-    for key, config_key in (
-        ("begin", "begin_s"),
-        ("end", "end_s"),
-        ("step-length", "step_length_s"),
-    ):
-        ET.SubElement(time_node, key, {"value": str(simulation[config_key])})
-    ET.indent(root, space="    ")
-    output_file.write_text(
-        ET.tostring(root, encoding="unicode") + "\n", encoding="utf-8"
-    )
-
-
 def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
-    """Generate Stage 2 artifacts for every route file in the configuration."""
+    """Generate Stage 2 artifacts for every configured experiment."""
     config_file = config_file.resolve()
     config = json.loads(config_file.read_text(encoding="utf-8"))
     base_manifest_file = (config_file.parent / config["base_manifest"]).resolve()
@@ -91,10 +66,6 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
         experiment_name = str(experiment["name"])
         experiment_output = output_root / experiment_name
         experiment_output.mkdir(parents=True, exist_ok=True)
-        simulation = experiment["simulation"]
-        incident = experiment["incident"]
-        detectors = experiment["detectors"]
-        subgraph_config = experiment["subgraph"]
         scenario = str(experiment["scenario"])
         scenario_input = scenarios.get(scenario)
         if scenario_input is None:
@@ -106,6 +77,7 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
         graph_file = experiment_output / "graph.graphml"
         export_dual_graph(graph, str(graph_file))
 
+        detectors = experiment["detectors"]
         detectors_file = experiment_output / "detectors.add.xml"
         generate_e2_detectors(
             str(network_file),
@@ -116,6 +88,8 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
             output_xml_target="e2_output.xml",
         )
 
+        incident = experiment["incident"]
+        subgraph_config = experiment["subgraph"]
         subgraph = extract_upstream_subgraph(
             graph,
             incident_edge=str(incident["edge"]),
@@ -125,13 +99,14 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
         )
         subgraph_file = experiment_output / "subgraph.graphml"
         export_dual_graph(subgraph, str(subgraph_file))
+
         sumo_config_file = experiment_output / f"{experiment_name}.sumocfg"
-        _write_sumo_config(
+        write_sumo_config(
             sumo_config_file,
             network_file,
             routes_file,
             detectors_file,
-            simulation,
+            experiment["simulation"],
         )
         experiment_result = {
             "experiment": experiment_name,
@@ -153,8 +128,9 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
         results.append(experiment_result)
 
     output_root.mkdir(parents=True, exist_ok=True)
-    manifest = output_root / "manifest.json"
-    manifest.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
+    (output_root / "manifest.json").write_text(
+        json.dumps(results, indent=2) + "\n", encoding="utf-8"
+    )
     return results
 
 
