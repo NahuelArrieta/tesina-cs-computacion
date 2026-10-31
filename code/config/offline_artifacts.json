@@ -1,0 +1,31 @@
+{
+  "base_manifest": "../networks/synthetic/routes/base_files/manifest.json",
+  "output_directory": "../networks/synthetic/artifacts",
+  "experiments": [
+    {
+      "name": "incident_a2b2",
+      "scenario": "seed42_cav00",
+      "incident": {
+        "edge": "A2B2",
+        "blocked_lane": 0,
+        "begin_s": 100,
+        "end_s": 600
+      },
+      "detectors": {
+        "frequency_s": 60,
+        "end_offset_m": 5,
+        "start_pos_m": 0
+      },
+      "subgraph": {
+        "min_probability": 0.05,
+        "max_travel_time_s": 100,
+        "intersection_delay_s": 10
+      },
+      "simulation": {
+        "begin_s": 0,
+        "end_s": 3600,
+        "step_length_s": 0.1
+      }
+    }
+  ]
+}
