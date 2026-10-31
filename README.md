@@ -63,7 +63,7 @@ Todos los experimentos se almacenan en una carpeta común. Cada experimento
 contiene:
 
 ```text
-<red>/experiments/<experimento>/
+experiments/<experimento>/
 ├── manifest.json
 ├── <experimento>.sumocfg
 ├── artifacts/
@@ -98,7 +98,7 @@ y una estrategia (`m0` a `m3`):
 ```bash
 cd code
 python3 -m simulation.simulator \
-  --manifest networks/synthetic/experiments/incident_a2b2/manifest.json \
+  --manifest ../experiments/incident_a2b2/manifest.json \
   --strategy m0
 ```
 

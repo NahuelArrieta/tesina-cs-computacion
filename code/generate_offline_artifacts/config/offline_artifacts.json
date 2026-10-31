@@ -1,6 +1,6 @@
 {
   "base_manifest": "../../networks/synthetic/routes/base_files/manifest.json",
-  "output_directory": "../../networks/synthetic/experiments",
+  "output_directory": "../../../experiments",
   "experiments": [
     {
       "name": "incident_a2b2",

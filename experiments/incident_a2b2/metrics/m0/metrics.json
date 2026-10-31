@@ -6,7 +6,7 @@
     "total_delay_s": 21053.22,
     "mean_delay_s": 45.97,
     "mean_speed_mps": 8.07,
-    "throughput_veh_hour": 2061.0
+    "throughput_veh_hour": 458.0
   },
   "stability": {
     "pre_incident": {
@@ -32,14 +32,14 @@
       "max_abs_jerk_mps3": 14.3654
     },
     "post_incident": {
-      "mean_speed_std": 5.6819,
+      "mean_speed_std": 5.6823,
       "max_speed_std": 6.9353,
-      "mean_accel_var": 1.741,
+      "mean_accel_var": 1.7409,
       "max_accel_var": 4.8044,
-      "mean_speed_mps": 7.7489,
-      "hard_brake_events": 7875,
-      "hard_brake_ratio": 0.050004,
-      "mean_abs_jerk_mps3": 0.7001,
+      "mean_speed_mps": 7.7481,
+      "hard_brake_events": 7877,
+      "hard_brake_ratio": 0.049992,
+      "mean_abs_jerk_mps3": 0.6998,
       "max_abs_jerk_mps3": 14.6987
     }
   },
