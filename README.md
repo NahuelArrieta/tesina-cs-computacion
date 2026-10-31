@@ -4,12 +4,12 @@
 
 La red estática se conserva en `code/networks/synthetic/grid5x5.net.xml`. Los
 parámetros de demanda están en
-[`code/config/base_files.json`](code/config/base_files.json). Para generar la
+[`code/generate_base_files/config/base_files.json`](code/generate_base_files/config/base_files.json). Para generar la
 matriz de demandas se necesita SUMO (`SUMO_HOME`) y se ejecuta:
 
 ```bash
 python code/generate_base_files/main.py \
-  --config code/config/base_files.json
+  --config code/generate_base_files/config/base_files.json
 ```
 
 El proceso valida que la red tenga aristas externas con carriles, usa la
@@ -26,7 +26,7 @@ cada semilla y tasa CAV), ejecutar:
 
 ```bash
 python code/generate_base_files/main.py \
-  --config code/config/base_files.json
+  --config code/generate_base_files/config/base_files.json
 ```
 
 La estructura resultante es:
@@ -46,7 +46,7 @@ code/networks/synthetic/
 
 La Etapa 2 se ejecuta con una configuración independiente de los archivos
 base:
-[`code/config/offline_artifacts.json`](code/config/offline_artifacts.json).
+[`code/generate_offline_artifacts/config/offline_artifacts.json`](code/generate_offline_artifacts/config/offline_artifacts.json).
 Esta configuración referencia la red y una carpeta de rutas producida por la
 Etapa 1 mediante su `manifest.json`, y define una lista de experimentos. Cada
 experimento referencia un único escenario base y puede definir sus propios
@@ -56,24 +56,28 @@ configuración.
 
 ```bash
 python code/generate_offline_artifacts/main.py \
-  --config code/config/offline_artifacts.json
+  --config code/generate_offline_artifacts/config/offline_artifacts.json
 ```
 
-Para cada experimento se crea una carpeta con todos sus artefactos:
+Todos los experimentos se almacenan en una carpeta común. Cada experimento
+contiene:
 
 ```text
-<red>/artifacts/<experimento>/
-├── graph.graphml
-├── subgraph.graphml
-├── detectors.add.xml
+<red>/experiments/<experimento>/
+├── manifest.json
 ├── <experimento>.sumocfg
-└── manifest.json
+├── artifacts/
+│   ├── graph.graphml
+│   ├── subgraph.graphml
+│   └── detectors.add.xml
 ```
 
-Cada experimento tiene su propio `manifest.json` y se genera además un
-manifiesto global en `<red>/artifacts/manifest.json`. La etapa reutiliza la
-demanda concreta del escenario para ponderar el grafo dual y conserva los
-parámetros del incidente en el manifiesto.
+La carpeta común se configura mediante `output_directory`. La Etapa 2 crea
+únicamente los artefactos necesarios para las etapas siguientes. Las salidas de
+simulación, métricas y resultados comparativos se crearán en sus respectivas
+etapas. No se genera un manifiesto global: cada experimento tiene su propio
+`manifest.json`. La etapa reutiliza la demanda concreta del escenario para
+ponderar el grafo dual y conserva los parámetros del incidente en el manifiesto.
 
 El `.sumocfg` referencia el `.net.xml` y el `.rou.xml` resueltos desde el
 manifiesto de archivos base, además de los detectores E2 generados. Los

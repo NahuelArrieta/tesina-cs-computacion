@@ -66,6 +66,8 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
         experiment_name = str(experiment["name"])
         experiment_output = output_root / experiment_name
         experiment_output.mkdir(parents=True, exist_ok=True)
+        artifacts_output = experiment_output / "artifacts"
+        artifacts_output.mkdir(parents=True, exist_ok=True)
         scenario = str(experiment["scenario"])
         scenario_input = scenarios.get(scenario)
         if scenario_input is None:
@@ -74,11 +76,11 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
         network_file = Path(scenario_input["network"]).resolve()
 
         graph = _build_graph(network_file, routes_file)
-        graph_file = experiment_output / "graph.graphml"
+        graph_file = artifacts_output / "graph.graphml"
         export_dual_graph(graph, str(graph_file))
 
         detectors = experiment["detectors"]
-        detectors_file = experiment_output / "detectors.add.xml"
+        detectors_file = artifacts_output / "detectors.add.xml"
         generate_e2_detectors(
             str(network_file),
             str(detectors_file),
@@ -97,7 +99,7 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
             max_seconds_travel=float(subgraph_config["max_travel_time_s"]),
             intersection_delay=float(subgraph_config["intersection_delay_s"]),
         )
-        subgraph_file = experiment_output / "subgraph.graphml"
+        subgraph_file = artifacts_output / "subgraph.graphml"
         export_dual_graph(subgraph, str(subgraph_file))
 
         sumo_config_file = experiment_output / f"{experiment_name}.sumocfg"
@@ -128,9 +130,6 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
         results.append(experiment_result)
 
     output_root.mkdir(parents=True, exist_ok=True)
-    (output_root / "manifest.json").write_text(
-        json.dumps(results, indent=2) + "\n", encoding="utf-8"
-    )
     return results
 
 

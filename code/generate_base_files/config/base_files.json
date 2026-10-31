@@ -1,5 +1,5 @@
 {
-  "network": "../networks/synthetic/grid5x5.net.xml",
+  "network": "../../networks/synthetic/grid5x5.net.xml",
   "begin_s": 0,
   "end_s": 3600,
   "period_s": 1.5,
