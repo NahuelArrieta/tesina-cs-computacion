@@ -89,3 +89,20 @@ simulación se crea y controla dinámicamente mediante
 [`IncidentManager`](code/simulation/incident_manager.py), que agrega el
 vehículo-obstrucción por TraCI, inicia la obstrucción y libera el carril al
 finalizar el intervalo configurado.
+
+## Etapa 3: ejecución de simulaciones
+
+La simulación recibe el manifiesto de un experimento generado por la Etapa 2
+y una estrategia (`m0` a `m3`):
+
+```bash
+cd code
+python3 -m simulation.simulator \
+  --manifest networks/synthetic/experiments/incident_a2b2/manifest.json \
+  --strategy m0
+```
+
+La ejecución lee del manifiesto el `.sumocfg`, la configuración del incidente
+y los directorios del experimento. Las salidas crudas se guardan en
+`output/<estrategia>/`. El cálculo de métricas pertenece a una etapa posterior
+y no se ejecuta durante esta etapa.

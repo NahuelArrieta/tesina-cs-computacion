@@ -113,6 +113,10 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
         experiment_result = {
             "experiment": experiment_name,
             "scenario": scenario,
+            "experiment_directory": str(experiment_output),
+            "artifacts_directory": str(artifacts_output),
+            "output_directory": str(experiment_output / "output"),
+            "simulation": experiment["simulation"],
             "routes": str(routes_file),
             "graph": str(graph_file),
             "detectors": str(detectors_file),
