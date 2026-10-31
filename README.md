@@ -106,3 +106,33 @@ La ejecución lee del manifiesto el `.sumocfg`, la configuración del incidente
 y los directorios del experimento. Las salidas crudas se guardan en
 `output/<estrategia>/`. El cálculo de métricas pertenece a una etapa posterior
 y no se ejecuta durante esta etapa.
+
+## Etapa 4: extracción y procesamiento de métricas
+
+La Etapa 4 lee el manifiesto del experimento y procesa las salidas crudas de
+las estrategias configuradas. La configuración y los módulos de esta etapa se
+encuentran en [`code/metrics/`](code/metrics/), con la configuración en
+[`code/metrics/config/metrics.json`](code/metrics/config/metrics.json).
+El grafo se toma desde `artifacts/graph.graphml`, mientras que los archivos
+`tripinfo.xml`, `fcd_output.xml` y `e2_output.xml` se leen desde
+`output/<estrategia>/`.
+
+```bash
+python code/metrics/main.py \
+  --config code/metrics/config/metrics.json
+```
+
+Los resultados se guardan por estrategia en:
+
+```text
+<experimento>/metrics/
+├── m0/
+│   ├── metrics.json
+│   ├── metrics_stability_by_step.csv
+│   └── metrics_congestion_<zona>_by_interval.csv
+└── ...
+```
+
+Si una estrategia todavía no tiene sus salidas crudas, la etapa falla
+explícitamente y no genera resultados incompletos. Las métricas no se calculan
+durante la Etapa 3.
