@@ -1,0 +1,12 @@
+<configuration>
+    <input>
+        <net-file value="/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/grid5x5.net.xml" />
+        <route-files value="/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav00.rou.xml" />
+        <additional-files value="/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/experiments/incident_a2b2/artifacts/detectors.add.xml" />
+    </input>
+    <time>
+        <begin value="0" />
+        <end value="3600" />
+        <step-length value="0.1" />
+    </time>
+</configuration>

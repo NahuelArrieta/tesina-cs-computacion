@@ -129,19 +129,23 @@ def get_alternative_routes(graph: nx.DiGraph, subgraph: nx.DiGraph) -> Set[str]:
     return alternative_routes
 
 
-def get_zones(graph: nx.DiGraph, incident_edge: str) -> Dict[str, List[str]]:
+def get_zones(
+    graph: nx.DiGraph,
+    subgraph: nx.DiGraph,
+    incident_edge: str,
+) -> Dict[str, List[str]]:
     """
-    Categorizes nodes in the subgraph into zones based on their proximity to the incident edge.
+    Categorizes nodes into zones using the full graph and influence subgraph.
+
+    Args:
+        graph: Full dual directed graph.
+        subgraph: Precomputed upstream influence subgraph.
+        incident_edge: Identifier of the incident street.
 
     Returns:
         zones: Dictionary mapping zone names to lists of node IDs.
     """
     
-    subgraph: nx.DiGraph = extract_upstream_subgraph(
-        graph=graph,
-        incident_edge=incident_edge
-    )
-
     incident_street_nodes = {incident_edge}
 
     upstream_nodes = set(subgraph.nodes())

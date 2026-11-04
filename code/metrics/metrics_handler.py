@@ -21,6 +21,7 @@ def collect_metrics(
     incident_end_s: float,
     sim_duration_seconds: float,
     graph: Nx.DiGraph,
+    subgraph: Nx.DiGraph,
     exclude_ids: Iterable[str] = (),
     congested_queue_threshold_m: float = 20.0,
     baseline_speed_ratio: float = 0.90,
@@ -46,7 +47,11 @@ def collect_metrics(
         excluded,
     )
 
-    zone_streets = get_zones(graph, incident_edge=incident_edge)
+    zone_streets = get_zones(
+        graph=graph,
+        subgraph=subgraph,
+        incident_edge=incident_edge,
+    )
 
     congestion_per_zone, congestion_timeseries = parse_and_compute_congestion_e2(
         output_path / "e2_output.xml",
@@ -143,9 +148,22 @@ def process_metrics(
     exclude_ids: Iterable[str] = (),
     congested_queue_threshold_m: float = 20.0,
     baseline_speed_ratio: float = 0.90,
+    graph_file: str | Path | None = None,
+    subgraph_file: str | Path | None = None,
 ) -> tuple[MetricData, dict[str, Path]]:
     """Compute all metrics and export them, returning data and output paths."""
-    graph = load_dual_graph(os.path.join(output_dir, "graph.graphml"))
+    graph_path = (
+        Path(graph_file)
+        if graph_file is not None
+        else Path(output_dir) / "graph.graphml"
+    )
+    graph = load_dual_graph(str(graph_path))
+    subgraph_path = (
+        Path(subgraph_file)
+        if subgraph_file is not None
+        else Path(output_dir) / "subgraph.graphml"
+    )
+    subgraph = load_dual_graph(str(subgraph_path))
 
     metrics = collect_metrics(
         incident_edge=incident_edge,
@@ -154,6 +172,7 @@ def process_metrics(
         incident_end_s=incident_end_s,
         sim_duration_seconds=sim_duration_seconds,
         graph=graph,
+        subgraph=subgraph,
         exclude_ids=exclude_ids,
         congested_queue_threshold_m=congested_queue_threshold_m,
         baseline_speed_ratio=baseline_speed_ratio,
