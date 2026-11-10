@@ -1,8 +1,7 @@
-"""Generate the homogeneous human-driver vehicle type used by SUMO."""
+"""Generate SUMO human-driver vehicle type distributions."""
 
 from __future__ import annotations
 
-import argparse
 import math
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -16,9 +15,9 @@ REQUIRED_COLUMNS = {
     "Accel_Mean",
     "Accel_Std",
     "Decel_Mean",
+    "Decel_Std",
     "Speed_Mean",
 }
-VEHICLE_TYPE_PERCENTAGES = {"Car": 100.0}
 SAMPLE_COUNT = 50
 MINIMUM_ACCELERATION = 0.5
 MINIMUM_DECELERATION = 0.5
@@ -28,10 +27,16 @@ REACTION_TIME = "1.2"
 KRAUSS_SIGMA = "0.5"
 
 
-def generate_vtypes(input_file: Path, output_file: Path) -> None:
+def generate_vtypes(
+    input_file: Path,
+    output_file: Path,
+    vehicle_type_percentages: dict[str, float],
+) -> None:
     """Create SUMO vehicle type distributions from configured CSV rows."""
-    if not math.isclose(sum(VEHICLE_TYPE_PERCENTAGES.values()), 100.0):
-        raise ValueError("VEHICLE_TYPE_PERCENTAGES must sum to 100")
+    if not vehicle_type_percentages or not math.isclose(
+        sum(vehicle_type_percentages.values()), 100.0
+    ):
+        raise ValueError("vehicle_type_percentages must sum to 100")
 
     parameters = pd.read_csv(input_file)
     missing_columns = REQUIRED_COLUMNS - set(parameters.columns)
@@ -40,7 +45,7 @@ def generate_vtypes(input_file: Path, output_file: Path) -> None:
         raise ValueError(f"CSV is missing required columns: {missing}")
 
     root = ET.Element("additional")
-    for vehicle_type in VEHICLE_TYPE_PERCENTAGES:
+    for vehicle_type in vehicle_type_percentages:
         type_parameters = parameters.loc[parameters["type"].eq(vehicle_type)]
         if len(type_parameters) != 1:
             raise ValueError(
@@ -53,11 +58,12 @@ def generate_vtypes(input_file: Path, output_file: Path) -> None:
             accel_mean = float(row["Accel_Mean"])
             accel_std = float(row["Accel_Std"])
             decel_mean = float(row["Decel_Mean"])
+            decel_std = float(row["Decel_Std"])
             max_speed = float(row["Speed_Mean"])
         except (TypeError, ValueError) as error:
             raise ValueError(
                 f"{vehicle_type} row contains a non-numeric value in "
-                "Accel_Mean, Accel_Std, Decel_Mean, or Speed_Mean"
+                "Accel_Mean, Accel_Std, Decel_Mean, Decel_Std, or Speed_Mean"
             ) from error
 
         accel_samples = np.clip(
@@ -66,12 +72,12 @@ def generate_vtypes(input_file: Path, output_file: Path) -> None:
             None,
         )
         decel_samples = np.clip(
-            np.random.normal(decel_mean, accel_std, SAMPLE_COUNT),
+            np.random.normal(decel_mean, decel_std, SAMPLE_COUNT),
             MINIMUM_DECELERATION,
             None,
         )
 
-        distribution_id = f"hdv_{vehicle_type.lower()}"
+        distribution_id = f"hdv_{vehicle_type.lower().replace(' ', '_')}"
         distribution = ET.SubElement(
             root, "vTypeDistribution", {"id": distribution_id}
         )
@@ -96,31 +102,3 @@ def generate_vtypes(input_file: Path, output_file: Path) -> None:
 
     output_file.parent.mkdir(parents=True, exist_ok=True)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Generate SUMO human-driver vehicle types from a CSV."
-    )
-    parser.add_argument(
-        "--input",
-        type=Path,
-        default=Path("sumo_vtype_parameters.csv"),
-        help="Input CSV file (default: sumo_vtype_parameters.csv)",
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=Path("vtypes.add.xml"),
-        help="Output SUMO additional file (default: vtypes.add.xml)",
-    )
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    generate_vtypes(args.input, args.output)
-
-
-if __name__ == "__main__":
-    main()
