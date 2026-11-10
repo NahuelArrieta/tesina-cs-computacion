@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -51,7 +50,7 @@ def run_simulation(
             "--fcd-output.attributes", "id,speed,acceleration",
         ]
 
-    traci.start(sumo_cmd, stdout=subprocess.DEVNULL)
+    traci.start(sumo_cmd)
     incident = IncidentManager()
     current_time = 0.0
     incident_started = False
@@ -68,6 +67,7 @@ def run_simulation(
         if incident.is_active:
             incident.end()
         traci.close()
+        print(f"Simulation finished at time {current_time:.2f} seconds.")
 
 
 def run_from_manifest(manifest_file: str | Path, strategy: str) -> Path:
