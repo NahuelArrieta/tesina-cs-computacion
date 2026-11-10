@@ -45,16 +45,13 @@ def _load_base_manifest(manifest_file: Path) -> dict[str, dict[str, str]]:
         scenario = str(entry.get("scenario", ""))
         route = entry.get("routes")
         network = entry.get("network")
-        vtypes = entry.get("vtypes")
-        if not scenario or not route or not network or not vtypes:
+        if not scenario or not route or not network:
             raise ValueError(
-                f"Base manifest entry requires scenario, routes, network and vtypes: "
-                f"{entry}"
+                f"Base manifest entry requires scenario, routes and network: {entry}"
             )
         scenarios[scenario] = {
             "routes": str(route),
             "network": str(network),
-            "vtypes": str(vtypes),
         }
     return scenarios
 
@@ -80,7 +77,7 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
             raise KeyError(f"Scenario not found in base manifest: {scenario}")
         routes_file = Path(scenario_input["routes"]).resolve()
         network_file = Path(scenario_input["network"]).resolve()
-        vtypes_file = Path(scenario_input["vtypes"]).resolve()
+        vtypes_file = routes_file.parent / "vtypes.add.xml"
         if not vtypes_file.is_file():
             raise FileNotFoundError(f"Vehicle types file not found: {vtypes_file}")
 
@@ -129,7 +126,6 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
             "routes": str(routes_file),
             "graph": str(graph_file),
             "detectors": str(detectors_file),
-            "vtypes": str(vtypes_file),
             "sumocfg": str(sumo_config_file),
             "incident": incident,
             "subgraph": str(subgraph_file),

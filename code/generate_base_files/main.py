@@ -52,7 +52,6 @@ def generate_matrix(config_file: Path) -> list[dict[str, int | float | str]]:
             manifest["scenario"] = scenario
             manifest["config"] = config_file.name
             manifest["routes"] = str(route_file.resolve())
-            manifest["vtypes"] = str(vtypes_file.resolve())
             manifests.append(manifest)
 
     (output_directory / "manifest.json").write_text(

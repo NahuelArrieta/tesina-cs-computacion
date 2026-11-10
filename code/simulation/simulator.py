@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -35,6 +36,7 @@ def run_simulation(
         "-c",
         sumo_file,
         "--no-step-log",
+        "--no-warnings",
         "--duration-log.disable",
     ]
     if additional_file:
@@ -49,7 +51,7 @@ def run_simulation(
             "--fcd-output.attributes", "id,speed,acceleration",
         ]
 
-    traci.start(sumo_cmd)
+    traci.start(sumo_cmd, stdout=subprocess.DEVNULL)
     incident = IncidentManager()
     current_time = 0.0
     incident_started = False
@@ -88,6 +90,7 @@ def run_from_manifest(manifest_file: str | Path, strategy: str) -> Path:
     for detector in detector_tree.getroot().iter("laneAreaDetector"):
         detector.set("file", str(detector_output))
 
+    temporary_config = None
     temporary_detector = tempfile.NamedTemporaryFile(
         mode="wb", suffix=".add.xml", dir=output_directory, delete=False
     )
@@ -96,19 +99,39 @@ def run_from_manifest(manifest_file: str | Path, strategy: str) -> Path:
             temporary_detector, encoding="utf-8", xml_declaration=True
         )
         temporary_detector.close()
+        sumo_config_tree = ET.parse(Path(manifest["sumocfg"]).resolve())
+        additional_files = sumo_config_tree.find("./input/additional-files")
+        if additional_files is None:
+            raise ValueError("SUMO configuration is missing input/additional-files")
+        additional_paths = [
+            path
+            for path in additional_files.get("value", "").split(",")
+            if Path(path).resolve() != Path(manifest["detectors"]).resolve()
+        ]
+        additional_paths.insert(0, temporary_detector.name)
+        additional_files.set("value", ",".join(additional_paths))
+        temporary_config = tempfile.NamedTemporaryFile(
+            mode="wb", suffix=".sumocfg", dir=output_directory, delete=False
+        )
+        sumo_config_tree.write(
+            temporary_config, encoding="utf-8", xml_declaration=True
+        )
+        temporary_config.close()
         run_simulation(
             duration=duration,
             incident_edge=str(incident["edge"]),
             incident_start=float(incident["begin_s"]),
             incident_end=float(incident["end_s"]),
             blocked_lane_index=int(incident.get("blocked_lane", 0)),
-            sumo_file=str(Path(manifest["sumocfg"]).resolve()),
+            sumo_file=temporary_config.name,
             output_dir=output_directory,
-            additional_file=temporary_detector.name,
         )
     finally:
         temporary_detector.close()
         Path(temporary_detector.name).unlink(missing_ok=True)
+        if temporary_config is not None:
+            temporary_config.close()
+            Path(temporary_config.name).unlink(missing_ok=True)
 
     return output_directory
 
