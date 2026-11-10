@@ -49,7 +49,10 @@ def _load_base_manifest(manifest_file: Path) -> dict[str, dict[str, str]]:
             raise ValueError(
                 f"Base manifest entry requires scenario, routes and network: {entry}"
             )
-        scenarios[scenario] = {"routes": str(route), "network": str(network)}
+        scenarios[scenario] = {
+            "routes": str(route),
+            "network": str(network),
+        }
     return scenarios
 
 
@@ -74,6 +77,9 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
             raise KeyError(f"Scenario not found in base manifest: {scenario}")
         routes_file = Path(scenario_input["routes"]).resolve()
         network_file = Path(scenario_input["network"]).resolve()
+        vtypes_file = routes_file.parent / "vtypes.add.xml"
+        if not vtypes_file.is_file():
+            raise FileNotFoundError(f"Vehicle types file not found: {vtypes_file}")
 
         graph = _build_graph(network_file, routes_file)
         graph_file = artifacts_output / "graph.graphml"
@@ -89,7 +95,6 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
             start_pos=float(detectors["start_pos_m"]),
             output_xml_target="e2_output.xml",
         )
-
         incident = experiment["incident"]
         subgraph_config = experiment["subgraph"]
         subgraph = extract_upstream_subgraph(
@@ -108,6 +113,7 @@ def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
             network_file,
             routes_file,
             detectors_file,
+            vtypes_file,
             experiment["simulation"],
         )
         experiment_result = {
