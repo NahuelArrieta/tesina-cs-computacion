@@ -37,6 +37,8 @@ def generate_vtypes(
         sum(vehicle_type_percentages.values()), 100.0
     ):
         raise ValueError("vehicle_type_percentages must sum to 100")
+    if any(percentage <= 0 for percentage in vehicle_type_percentages.values()):
+        raise ValueError("vehicle_type_percentages must contain positive values")
 
     parameters = pd.read_csv(input_file)
     missing_columns = REQUIRED_COLUMNS - set(parameters.columns)

@@ -12,7 +12,8 @@
     "hdv_count": 2400,
     "scenario": "seed42_cav00",
     "config": "base_files.json",
-    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav00.rou.xml"
+    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav00.rou.xml",
+    "vtypes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/vtypes.add.xml"
   },
   {
     "network": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/grid5x5.net.xml",
@@ -27,7 +28,8 @@
     "hdv_count": 1800,
     "scenario": "seed42_cav25",
     "config": "base_files.json",
-    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav25.rou.xml"
+    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav25.rou.xml",
+    "vtypes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/vtypes.add.xml"
   },
   {
     "network": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/grid5x5.net.xml",
@@ -42,7 +44,8 @@
     "hdv_count": 1200,
     "scenario": "seed42_cav50",
     "config": "base_files.json",
-    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav50.rou.xml"
+    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav50.rou.xml",
+    "vtypes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/vtypes.add.xml"
   },
   {
     "network": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/grid5x5.net.xml",
@@ -57,7 +60,8 @@
     "hdv_count": 600,
     "scenario": "seed42_cav75",
     "config": "base_files.json",
-    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav75.rou.xml"
+    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav75.rou.xml",
+    "vtypes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/vtypes.add.xml"
   },
   {
     "network": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/grid5x5.net.xml",
@@ -72,6 +76,7 @@
     "hdv_count": 0,
     "scenario": "seed42_cav100",
     "config": "base_files.json",
-    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav100.rou.xml"
+    "routes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/seed42_cav100.rou.xml",
+    "vtypes": "/home/nahuel/Documents/Fing/tesina/tesina-cs-computacion/code/networks/synthetic/routes/base_files/vtypes.add.xml"
   }
 ]

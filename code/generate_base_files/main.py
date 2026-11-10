@@ -11,6 +11,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from generate_base_files.generate_demand import generate_demand
+from generate_base_files.generate_vtypes import generate_vtypes
 
 
 def generate_matrix(config_file: Path) -> list[dict[str, int | float | str]]:
@@ -20,6 +21,17 @@ def generate_matrix(config_file: Path) -> list[dict[str, int | float | str]]:
     network_file = (config_file.parent / config["network"]).resolve()
     output_directory = network_file.parent / "routes" / config_file.stem
     output_directory.mkdir(parents=True, exist_ok=True)
+    vtypes_file = output_directory / "vtypes.add.xml"
+    vtype_parameters_file = (config_file.parent / config["vtype_parameters"]).resolve()
+    vehicle_type_percentages = {
+        str(vehicle_type): float(percentage)
+        for vehicle_type, percentage in config["vehicle_type_percentages"].items()
+    }
+    generate_vtypes(
+        vtype_parameters_file,
+        vtypes_file,
+        vehicle_type_percentages,
+    )
     manifests: list[dict[str, int | float | str]] = []
 
     for seed in config["seeds"]:
@@ -35,10 +47,12 @@ def generate_matrix(config_file: Path) -> list[dict[str, int | float | str]]:
                 end=float(config["end_s"]),
                 seed=int(seed),
                 cav_penetration=float(penetration),
+                vehicle_type_percentages=vehicle_type_percentages,
             )
             manifest["scenario"] = scenario
             manifest["config"] = config_file.name
             manifest["routes"] = str(route_file.resolve())
+            manifest["vtypes"] = str(vtypes_file.resolve())
             manifests.append(manifest)
 
     (output_directory / "manifest.json").write_text(
