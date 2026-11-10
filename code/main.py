@@ -1,46 +1,54 @@
-from simulation.simulator import run_simulation
+"""Run one experiment strategy and export its metrics."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
 from metrics.metrics_handler import process_metrics
-from utils.dual_graph_handler import load_dual_graph, export_dual_graph
-from utils.subgraph_extractor import extract_upstream_subgraph
-import os
-
-INCIDENT_EDGE = "A2B2" 
-SIM_DURATION = 1000.0  
-BLOCKED_LANE_INDEX = 0          
-INCIDENT_START = 100.0          
-INCIDENT_END = 600.0 
-NETWORKS_DIR = "./networks/synthetic/"
-SUMO_FILE = "synthetic.sumocfg"
-OUTPUTS_DIR = "./output/"
-OUTPUT_DIR = os.path.join(OUTPUTS_DIR, "synthetic")
-RESULTS_DIR = "../results"
-RESULT_NAME = "synthetic"
+from simulation.simulator import run_from_manifest
 
 
+def run_experiment(manifest_file: Path, strategy: str) -> None:
+    """Run a strategy from an experiment manifest and process its outputs."""
+    manifest_file = manifest_file.resolve()
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+    output_directory = Path(manifest["output_directory"]).resolve() / strategy
+    experiment_directory = Path(manifest["experiment_directory"]).resolve()
+    metrics_directory = experiment_directory / "metrics" / strategy
+    incident = manifest["incident"]
+    simulation = manifest["simulation"]
 
-sumo_file_path = os.path.join(NETWORKS_DIR, SUMO_FILE)
+    run_from_manifest(manifest_file, strategy)
+    process_metrics(
+        incident_edge=str(incident["edge"]),
+        output_dir=output_directory,
+        incident_start_s=float(incident["begin_s"]),
+        incident_end_s=float(incident["end_s"]),
+        sim_duration_seconds=float(simulation["end_s"]),
+        export_dir=metrics_directory,
+        name="",
+        graph_file=manifest["graph"],
+        subgraph_file=manifest["subgraph"],
+        exclude_ids=["veh_bloqueo"],
+    )
 
-graph = load_dual_graph(os.path.join(NETWORKS_DIR, "graph.graphml"))
 
-subgraph = extract_upstream_subgraph(
-    graph=graph,
-    incident_edge=INCIDENT_EDGE,
-    min_prob_threshold=0.05,
-    max_seconds_travel=100.0
-)
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Run one experiment strategy and export its metrics"
+    )
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument(
+        "--strategy",
+        required=True,
+        choices=("m0", "m1", "m2", "m3"),
+    )
+    args = parser.parse_args()
+    run_experiment(args.manifest, args.strategy)
+    print(f"Completed strategy {args.strategy}")
 
-# export_dual_graph(subgraph, os.path.join(OUTPUT_DIR, "subgraph.graphml"))
 
-# run_simulation(SIM_DURATION, INCIDENT_EDGE, INCIDENT_START, INCIDENT_END, sumo_file_path, OUTPUT_DIR)
-
-## Export metrics
-process_metrics(
-    incident_edge=INCIDENT_EDGE,
-    output_dir=OUTPUT_DIR,
-    export_dir=RESULTS_DIR,
-    name=RESULT_NAME,
-    incident_start_s=INCIDENT_START,
-    incident_end_s=INCIDENT_END,
-    sim_duration_seconds=SIM_DURATION,
-    exclude_ids=["veh_bloqueo"],
-)
+if __name__ == "__main__":
+    main()
