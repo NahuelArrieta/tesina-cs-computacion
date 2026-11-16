@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='utf-8'?>
+<additional>
+    <vTypeDistribution id="hdv_car">
+        <vType id="hdv_car_0" accel="3.60" decel="1.45" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_1" accel="0.91" decel="3.15" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_2" accel="0.50" decel="2.34" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_3" accel="3.40" decel="1.78" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_4" accel="2.59" decel="2.46" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_5" accel="1.00" decel="3.92" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_6" accel="3.39" decel="0.50" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_7" accel="4.31" decel="1.46" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_8" accel="1.14" decel="3.52" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_9" accel="1.72" decel="5.52" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_10" accel="1.18" decel="3.01" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_11" accel="0.50" decel="0.50" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_12" accel="2.24" decel="3.95" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_13" accel="1.65" decel="0.55" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_14" accel="0.50" decel="6.26" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_15" accel="3.38" decel="4.06" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_16" accel="0.50" decel="0.59" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_17" accel="1.13" decel="0.50" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_18" accel="3.39" decel="5.89" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_19" accel="1.76" decel="0.50" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_20" accel="3.47" decel="0.50" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_21" accel="0.50" decel="2.22" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_22" accel="1.69" decel="2.05" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_23" accel="4.53" decel="2.86" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_24" accel="0.64" decel="2.13" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_25" accel="0.50" decel="1.81" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_26" accel="1.45" decel="1.05" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_27" accel="4.01" decel="1.02" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_28" accel="0.69" decel="1.55" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_29" accel="0.50" decel="1.43" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_30" accel="2.07" decel="1.96" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_31" accel="0.50" decel="3.10" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_32" accel="2.49" decel="4.25" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_33" accel="3.57" decel="0.50" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_34" accel="3.94" decel="3.32" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_35" accel="0.51" decel="3.47" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_36" accel="5.28" decel="2.62" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_37" accel="1.48" decel="3.06" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_38" accel="2.87" decel="0.50" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_39" accel="4.47" decel="3.58" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_40" accel="4.25" decel="0.50" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_41" accel="0.50" decel="1.89" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_42" accel="2.21" decel="0.61" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_43" accel="2.32" decel="0.50" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_44" accel="0.50" decel="3.47" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_45" accel="0.61" decel="2.94" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_46" accel="0.50" decel="1.21" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_47" accel="0.68" decel="2.28" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_48" accel="1.17" decel="3.38" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+        <vType id="hdv_car_49" accel="5.42" decel="2.74" maxSpeed="15.82" length="4.5" minGap="2.5" tau="1.2" sigma="0.5" />
+    </vTypeDistribution>
+</additional>

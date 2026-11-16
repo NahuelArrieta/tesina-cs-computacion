@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import os
 import random
 import subprocess
@@ -42,35 +43,38 @@ def _sumo_tool(name: str) -> Path:
     return tool
 
 
-def _assign_vehicle_types(route_file: Path, penetration: float, seed: int) -> int:
+def _assign_vehicle_types(
+    route_file: Path,
+    penetration: float,
+    seed: int,
+    vehicle_type_percentages: dict[str, float],
+) -> int:
     tree = ET.parse(route_file)
     root = tree.getroot()
     vehicles = root.findall("vehicle")
     cav_count = round(len(vehicles) * penetration)
     cav_ids = {vehicle.get("id") for vehicle in vehicles}
     selected = set(random.Random(seed).sample(sorted(cav_ids), cav_count))
+    human_vehicles = [
+        vehicle for vehicle in vehicles if vehicle.get("id") not in selected
+    ]
+    type_counts = _vehicle_type_counts(len(human_vehicles), vehicle_type_percentages)
+    shuffled_human_vehicles = human_vehicles[:]
+    random.Random(seed).shuffle(shuffled_human_vehicles)
 
+    offset = 0
+    for vehicle_type, count in type_counts.items():
+        for vehicle in shuffled_human_vehicles[offset : offset + count]:
+            vehicle.set("type", f"hdv_{vehicle_type.lower().replace(' ', '_')}")
+        offset += count
     for vehicle in vehicles:
-        vehicle.set("type", "CAV" if vehicle.get("id") in selected else "HDV")
+        if vehicle.get("id") in selected:
+            vehicle.set("type", "CAV")
 
     for vehicle_type in reversed(root.findall("vType")):
         root.remove(vehicle_type)
     root.insert(
         0,
-        ET.Element(
-            "vType",
-            {
-                "id": "HDV",
-                "vClass": "passenger",
-                "carFollowModel": "Krauss",
-                "accel": "2.6",
-                "decel": "4.5",
-                "tau": "1.0",
-            },
-        ),
-    )
-    root.insert(
-        1,
         ET.Element(
             "vType",
             {
@@ -88,6 +92,28 @@ def _assign_vehicle_types(route_file: Path, penetration: float, seed: int) -> in
     return cav_count
 
 
+def _vehicle_type_counts(
+    vehicle_count: int, vehicle_type_percentages: dict[str, float]
+) -> dict[str, int]:
+    if not vehicle_type_percentages or not math.isclose(
+        sum(vehicle_type_percentages.values()), 100.0
+    ):
+        raise ValueError("vehicle_type_percentages must sum to 100")
+    if any(percentage <= 0 for percentage in vehicle_type_percentages.values()):
+        raise ValueError("vehicle_type_percentages must contain positive values")
+
+    counts = {}
+    assigned = 0
+    vehicle_types = list(vehicle_type_percentages.items())
+    for vehicle_type, percentage in vehicle_types[:-1]:
+        count = round(vehicle_count * percentage / 100)
+        counts[vehicle_type] = count
+        assigned += count
+    if vehicle_types:
+        counts[vehicle_types[-1][0]] = vehicle_count - assigned
+    return counts
+
+
 def generate_demand(
     network_file: Path,
     output_file: Path,
@@ -96,6 +122,7 @@ def generate_demand(
     end: float,
     seed: int,
     cav_penetration: float,
+    vehicle_type_percentages: dict[str, float],
 ) -> dict[str, int | float | str]:
     """Generate and validate one deterministic route file."""
     if not 0.0 <= cav_penetration <= 1.0:
@@ -157,7 +184,12 @@ def generate_demand(
     if unknown_edges:
         raise ValueError(f"Generated routes reference unknown edges: {sorted(unknown_edges)}")
 
-    cav_count = _assign_vehicle_types(output_file, cav_penetration, seed)
+    cav_count = _assign_vehicle_types(
+        output_file,
+        cav_penetration,
+        seed,
+        vehicle_type_percentages,
+    )
     vehicle_count = len(route_tree.getroot().findall("vehicle"))
     return {
         "network": str(network_file),

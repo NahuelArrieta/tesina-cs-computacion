@@ -12,6 +12,7 @@ def write_sumo_config(
     network_file: Path,
     routes_file: Path,
     detectors_file: Path,
+    vtypes_file: Path,
     simulation: dict[str, Any],
 ) -> None:
     """Write a SUMO configuration referencing an experiment's artifacts."""
@@ -19,7 +20,11 @@ def write_sumo_config(
     input_node = ET.SubElement(root, "input")
     ET.SubElement(input_node, "net-file", {"value": str(network_file)})
     ET.SubElement(input_node, "route-files", {"value": str(routes_file)})
-    ET.SubElement(input_node, "additional-files", {"value": str(detectors_file)})
+    ET.SubElement(
+        input_node,
+        "additional-files",
+        {"value": f"{detectors_file},{vtypes_file}"},
+    )
     time_node = ET.SubElement(root, "time")
     for key, config_key in (
         ("begin", "begin_s"),

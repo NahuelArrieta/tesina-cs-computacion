@@ -1,5 +1,9 @@
 {
   "network": "../../networks/synthetic/grid5x5.net.xml",
+  "vtype_parameters": "../../dataset_analysis/pNeuma/sumo_params.csv",
+  "vehicle_type_percentages": {
+    "Car": 100.0
+  },
   "begin_s": 0,
   "end_s": 3600,
   "period_s": 1.5,
