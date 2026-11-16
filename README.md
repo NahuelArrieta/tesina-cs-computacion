@@ -90,6 +90,15 @@ simulación se crea y controla dinámicamente mediante
 vehículo-obstrucción por TraCI, inicia la obstrucción y libera el carril al
 finalizar el intervalo configurado.
 
+Durante la simulación también se muestra en tiempo real una ventana con la
+visualización del subgrafo upstream definido en `manifest.json`. Cada nodo
+corresponde a una arista de SUMO y se colorea según
+`1 - velocidad_media / velocidad_libre` (verde: libre; rojo: congestionada).
+El ancho de cada arista corresponde a su probabilidad de giro (`weight`). La
+frecuencia de actualización se puede configurar con
+`simulation.visualization_interval_s` y por defecto es de 10 segundos. La
+ventana debe ejecutarse en una sesión gráfica con Matplotlib.
+
 ## Etapa 3: ejecución de simulaciones
 
 La simulación recibe el manifiesto de un experimento generado por la Etapa 2

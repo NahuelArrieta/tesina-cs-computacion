@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 import traci
 from .incident_manager import IncidentManager
+from .subgraph_visualization import SubgraphVisualizer
 
 ## Output files
 TRIPINFO_PATH = "tripinfo.xml"
@@ -21,6 +22,8 @@ def run_simulation(
     output_dir=None,
     blocked_lane_index=0,
     additional_file=None,
+    subgraph_file=None,
+    visualization_interval_s=10.0,
 ):
     sumo_binary = os.environ.get("SUMO_BINARY", "sumo")
 
@@ -52,11 +55,20 @@ def run_simulation(
 
     traci.start(sumo_cmd)
     incident = IncidentManager()
+    visualizer = None
+    if subgraph_file:
+        from utils.dual_graph_handler import load_dual_graph
+
+        visualizer = SubgraphVisualizer(load_dual_graph(str(subgraph_file)).copy())
     current_time = 0.0
     incident_started = False
+    next_visualization_s = 0.0
     try:
         while traci.simulation.getMinExpectedNumber() > 0 and current_time < duration:
             current_time = traci.simulation.getTime()
+            if visualizer and current_time >= next_visualization_s:
+                visualizer.update(current_time)
+                next_visualization_s += visualization_interval_s
             if current_time >= incident_start and not incident_started:
                 incident.start(incident_edge, blocked_lane_index)
                 incident_started = True
@@ -67,6 +79,8 @@ def run_simulation(
         if incident.is_active:
             incident.end()
         traci.close()
+        if visualizer:
+            visualizer.close()
         print(f"Simulation finished at time {current_time:.2f} seconds.")
 
 
@@ -85,6 +99,11 @@ def run_from_manifest(manifest_file: str | Path, strategy: str) -> Path:
     incident = manifest["incident"]
     simulation = manifest.get("simulation", {})
     duration = float(simulation.get("end_s", 3600.0))
+    visualization_interval_s = float(
+        simulation.get("visualization_interval_s", 10.0)
+    )
+    if visualization_interval_s <= 0.0:
+        raise ValueError("simulation.visualization_interval_s must be positive")
     detector_tree = ET.parse(Path(manifest["detectors"]).resolve())
     detector_output = output_directory / "e2_output.xml"
     for detector in detector_tree.getroot().iter("laneAreaDetector"):
@@ -125,6 +144,8 @@ def run_from_manifest(manifest_file: str | Path, strategy: str) -> Path:
             blocked_lane_index=int(incident.get("blocked_lane", 0)),
             sumo_file=temporary_config.name,
             output_dir=output_directory,
+            subgraph_file=manifest["subgraph"],
+            visualization_interval_s=visualization_interval_s,
         )
     finally:
         temporary_detector.close()
