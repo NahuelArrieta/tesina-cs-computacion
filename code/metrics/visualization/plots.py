@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import base64
+import html
 import json
 import mimetypes
 from pathlib import Path
@@ -102,17 +103,38 @@ def _save_figure(
 
 
 def _write_report(output_directory: Path, paths: Iterable[Path]) -> Path:
-    sections = []
+    plot_paths: dict[str, dict[str, Path]] = {}
     for path in paths:
-        if path.suffix.lower() not in {".png", ".svg", ".pdf"}:
-            continue
-        content = base64.b64encode(path.read_bytes()).decode("ascii")
-        mime_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-        sections.append(
-            f"<h2>{path.stem.replace('_', ' ').title()}</h2>"
-            f'<img src="data:{mime_type};base64,{content}" '
-            f'alt="{path.stem}" />'
+        suffix = path.suffix.lower().lstrip(".")
+        if suffix in {"png", "svg", "pdf"}:
+            plot_paths.setdefault(path.stem, {})[suffix] = path
+
+    sections = []
+    for stem, variants in plot_paths.items():
+        title = html.escape(stem.replace("_", " ").title())
+        embedded_format = next(
+            (file_format for file_format in ("png", "svg") if file_format in variants),
+            None,
         )
+        if embedded_format is None:
+            sections.append(f"<h2>{title}</h2>")
+        else:
+            path = variants[embedded_format]
+            content = base64.b64encode(path.read_bytes()).decode("ascii")
+            mime_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+            sections.append(
+                f"<h2>{title}</h2>"
+                f'<img src="data:{mime_type};base64,{content}" '
+                f'alt="{title}" />'
+            )
+
+        links = [
+            f'<a href="{html.escape(path.name)}">{html.escape(file_format.upper())}</a>'
+            for file_format, path in sorted(variants.items())
+            if file_format == "pdf"
+        ]
+        if links:
+            sections.append("<p>Downloads: " + " | ".join(links) + "</p>")
     report_path = output_directory / "report.html"
     report_path.write_text(
         "<!doctype html><html><head><meta charset=\"utf-8\">"
