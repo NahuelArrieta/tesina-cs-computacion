@@ -24,7 +24,11 @@ def _incident_window(
     start = config.get("incident_start_s")
     end = config.get("incident_end_s")
     manifest_file = metrics_directory.parent / "manifest.json"
-    if start is None or end is None:
+    if (start is None) != (end is None):
+        raise ValueError(
+            "incident_start_s and incident_end_s must be provided together"
+        )
+    if start is None and end is None:
         if not manifest_file.is_file():
             return None
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
