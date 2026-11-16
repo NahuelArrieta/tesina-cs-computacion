@@ -164,3 +164,10 @@ También se pueden solicitar `svg` y `pdf`. `plots` acepta `summary`,
 genera un único `report.html` autocontenido con todos los gráficos embebidos.
 Las figuras, el reporte y un manifiesto de exportación se guardan en
 `output_directory`.
+
+When the experiment `manifest.json` is next to the metrics directory, the
+visualization automatically reads `incident.begin_s` and `incident.end_s`.
+Stability and congestion plots then shade the pre-incident, incident, and
+post-incident stages and draw boundary lines. If no manifest is available, the
+boundaries can be supplied explicitly with `incident_start_s` and
+`incident_end_s` in the visualization configuration.

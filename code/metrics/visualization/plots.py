@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 
 MetricData = dict[str, Any]
 SUPPORTED_PLOTS = {"summary", "stability", "congestion"}
+StageWindows = tuple[float, float] | None
 
 
 def _available_strategies(metrics_directory: Path) -> list[str]:
@@ -47,6 +48,39 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
         raise FileNotFoundError(f"Time-series file not found: {path}")
     with path.open(newline="", encoding="utf-8") as csv_file:
         return list(csv.DictReader(csv_file))
+
+
+def _draw_stage_boundaries(axis: plt.Axes, incident_window: StageWindows) -> None:
+    if incident_window is None:
+        return
+    incident_start_s, incident_end_s = incident_window
+    x_min, x_max = axis.get_xlim()
+    axis.axvspan(
+        x_min,
+        incident_start_s,
+        color="#4c78a8",
+        alpha=0.10,
+        label="Pre-incident",
+        zorder=0,
+    )
+    axis.axvspan(
+        incident_start_s,
+        incident_end_s,
+        color="#e45756",
+        alpha=0.12,
+        label="Incident",
+        zorder=0,
+    )
+    axis.axvspan(
+        incident_end_s,
+        x_max,
+        color="#59a14f",
+        alpha=0.10,
+        label="Post-incident",
+        zorder=0,
+    )
+    axis.axvline(incident_start_s, color="#b22222", linestyle="--", linewidth=1.2)
+    axis.axvline(incident_end_s, color="#b22222", linestyle="--", linewidth=1.2)
 
 
 def _save_figure(
@@ -126,6 +160,7 @@ def _plot_stability(
     output_directory: Path,
     formats: Iterable[str],
     dpi: int,
+    incident_window: StageWindows,
 ) -> list[Path]:
     figure, axis = plt.subplots(figsize=(11, 6), constrained_layout=True)
     for strategy in strategies:
@@ -135,6 +170,7 @@ def _plot_stability(
             [float(row["mean_speed_mps"]) for row in rows],
             label=strategy,
         )
+    _draw_stage_boundaries(axis, incident_window)
     axis.set_title("Mean speed over time")
     axis.set_xlabel("Time (s)")
     axis.set_ylabel("Mean speed (m/s)")
@@ -150,6 +186,7 @@ def _plot_congestion(
     output_directory: Path,
     formats: Iterable[str],
     dpi: int,
+    incident_window: StageWindows,
 ) -> list[Path]:
     zones = sorted(
         {
@@ -172,6 +209,7 @@ def _plot_congestion(
                 [float(row["mean_queue_length_m"]) for row in rows],
                 label=strategy,
             )
+        _draw_stage_boundaries(axis, incident_window)
         axis.set_title(f"Mean queue length: {zone.replace('_', ' ').title()}")
         axis.set_xlabel("Time (s)")
         axis.set_ylabel("Queue length (m)")
@@ -192,6 +230,7 @@ def visualize_metrics(
     formats: Iterable[str] = ("png",),
     plots: Iterable[str] = ("summary", "stability", "congestion"),
     dpi: int = 150,
+    incident_window: StageWindows = None,
 ) -> list[Path]:
     """Export selected figures for all requested strategies.
 
@@ -221,12 +260,25 @@ def visualize_metrics(
         paths.extend(_plot_summary(data, output_path, format_list, dpi))
     if "stability" in plot_list:
         paths.extend(
-            _plot_stability(metrics_path, strategy_list, output_path, format_list, dpi)
+            _plot_stability(
+                metrics_path,
+                strategy_list,
+                output_path,
+                format_list,
+                dpi,
+                incident_window,
+            )
         )
     if "congestion" in plot_list:
         paths.extend(
             _plot_congestion(
-                metrics_path, strategy_list, data, output_path, format_list, dpi
+                metrics_path,
+                strategy_list,
+                data,
+                output_path,
+                format_list,
+                dpi,
+                incident_window,
             )
         )
 
@@ -237,6 +289,7 @@ def visualize_metrics(
         "plots": plot_list,
         "files": [str(path) for path in paths],
         "report": str(report_path),
+        "incident_window": incident_window,
     }
     manifest_path = output_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

@@ -18,6 +18,27 @@ def _resolve_path(value: str | Path, base_directory: Path) -> Path:
     return path if path.is_absolute() else (base_directory / path).resolve()
 
 
+def _incident_window(
+    config: dict[str, object], metrics_directory: Path
+) -> tuple[float, float] | None:
+    start = config.get("incident_start_s")
+    end = config.get("incident_end_s")
+    manifest_file = metrics_directory.parent / "manifest.json"
+    if start is None or end is None:
+        if not manifest_file.is_file():
+            return None
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+        incident = manifest.get("incident", {})
+        start = incident.get("begin_s")
+        end = incident.get("end_s")
+    if start is None or end is None:
+        return None
+    start_s, end_s = float(start), float(end)
+    if start_s < 0 or end_s <= start_s:
+        raise ValueError("incident boundaries must satisfy 0 <= start < end")
+    return start_s, end_s
+
+
 def export_visualizations(config_file: Path) -> list[Path]:
     """Read a visualization config and export all requested figures."""
     config_file = config_file.resolve()
@@ -53,6 +74,7 @@ def export_visualizations(config_file: Path) -> list[Path]:
         formats=[str(file_format).lower().lstrip(".") for file_format in formats],
         plots=[str(plot) for plot in plots],
         dpi=int(config.get("dpi", 150)),
+        incident_window=_incident_window(config, metrics_directory),
     )
 
 
