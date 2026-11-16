@@ -136,3 +136,28 @@ Los resultados se guardan por estrategia en:
 Si una estrategia todavía no tiene sus salidas crudas, la etapa falla
 explícitamente y no genera resultados incompletos. Las métricas no se calculan
 durante la Etapa 3.
+
+## Etapa 5: visualización y exportación de métricas
+
+La Etapa 5 genera visualizaciones comparables para una o más estrategias (`m0`,
+`m1`, etc.) a partir de los archivos exportados por la Etapa 4. La configuración
+de ejemplo está en
+[`code/metrics/config/visualization.json`](code/metrics/config/visualization.json):
+
+```bash
+python code/metrics/visualization/main.py \
+  --config code/metrics/config/visualization.json
+```
+
+También se puede ejecutar como módulo desde `code`:
+
+```bash
+python -m metrics.visualization \
+  --config metrics/config/visualization.json
+```
+
+La lista `strategies` define las carpetas que se comparan. `formats` acepta
+`png`, `svg` y `pdf`, mientras que `plots` acepta `summary`, `stability` y
+`congestion`. Las figuras y un manifiesto de exportación se guardan en
+`output_directory`. La visualización requiere los archivos `metrics.json` y
+las series CSV de cada estrategia seleccionada.

@@ -1,0 +1,17 @@
+{
+  "metrics_directory": "../../../experiments/incident_a2b2/metrics",
+  "output_directory": "../../../experiments/incident_a2b2/visualizations",
+  "strategies": [
+    "m0"
+  ],
+  "formats": [
+    "png",
+    "svg"
+  ],
+  "plots": [
+    "summary",
+    "stability",
+    "congestion"
+  ],
+  "dpi": 150
+}
