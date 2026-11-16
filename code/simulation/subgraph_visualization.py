@@ -37,11 +37,13 @@ class SubgraphVisualizer:
             for node, data in subgraph.nodes(data=True)
         }
         self._figure, self._axis = plt.subplots(figsize=(12, 9))
+        self._figure.canvas.manager.set_window_title("SUMO subgraph monitor")
         self._figure.show()
+        self._configure_overlay_window()
         self._draw_static_graph()
 
     def update(self, time_s: float) -> None:
-        """Sample TraCI and refresh the live visualization."""
+        """Sample TraCI and refresh the lightweight live visualization."""
         congestion: dict[str, float] = {}
         for node, attributes in self.subgraph.nodes(data=True):
             if node not in self._edge_ids:
@@ -64,11 +66,17 @@ class SubgraphVisualizer:
         self._axis.set_title(f"Subgraph at t={time_s:.1f}s (edge width = turn ratio)")
         self._figure.canvas.draw_idle()
         self._figure.canvas.flush_events()
-        plt.pause(0.001)
 
     def close(self) -> None:
         """Close the live visualization window."""
         plt.close(self._figure)
+
+    def _configure_overlay_window(self) -> None:
+        """Keep the monitor above SUMO without repeatedly taking focus."""
+        window = self._figure.canvas.manager.window
+        window.wm_attributes("-topmost", True)
+        window.attributes("-topmost", True)
+        window.focusmodel("passive")
 
     def _draw_static_graph(self) -> None:
         """Draw graph topology and return reusable node artists."""
