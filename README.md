@@ -156,8 +156,11 @@ python -m metrics.visualization \
   --config metrics/config/visualization.json
 ```
 
-La lista `strategies` define las carpetas que se comparan. `formats` acepta
-`png`, `svg` y `pdf`, mientras que `plots` acepta `summary`, `stability` y
-`congestion`. Las figuras y un manifiesto de exportación se guardan en
-`output_directory`. La visualización requiere los archivos `metrics.json` y
-las series CSV de cada estrategia seleccionada.
+La lista opcional `strategies` define las carpetas que se comparan. Si se omite,
+se detectan automáticamente todas las estrategias que contienen un
+`metrics.json`. Si no se especifica `formats`, se generan imágenes PNG.
+También se pueden solicitar `svg` y `pdf`. `plots` acepta `summary`,
+`stability` y `congestion`. Además de las imágenes individuales, siempre se
+genera un único `report.html` autocontenido con todos los gráficos embebidos.
+Las figuras, el reporte y un manifiesto de exportación se guardan en
+`output_directory`.

@@ -32,9 +32,11 @@ def export_visualizations(config_file: Path) -> list[Path]:
         config.get("output_directory", metrics_directory / "visualizations"),
         config_file.parent,
     )
-    strategies = config.get("strategies", ["m0"])
-    if not isinstance(strategies, list) or not strategies:
-        raise ValueError("strategies must be a non-empty list")
+    strategies = config.get("strategies")
+    if strategies is not None and (
+        not isinstance(strategies, list) or not strategies
+    ):
+        raise ValueError("strategies must be a non-empty list when specified")
     formats = config.get("formats", ["png"])
     if not isinstance(formats, list) or not formats:
         raise ValueError("formats must be a non-empty list")
@@ -45,7 +47,9 @@ def export_visualizations(config_file: Path) -> list[Path]:
     return visualize_metrics(
         metrics_directory=metrics_directory,
         output_directory=output_directory,
-        strategies=[str(strategy) for strategy in strategies],
+        strategies=None
+        if strategies is None
+        else [str(strategy) for strategy in strategies],
         formats=[str(file_format).lower().lstrip(".") for file_format in formats],
         plots=[str(plot) for plot in plots],
         dpi=int(config.get("dpi", 150)),
