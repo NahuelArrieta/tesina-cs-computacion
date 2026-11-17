@@ -23,8 +23,7 @@ def run_simulation(
     additional_file=None,
     subgraph_file=None,
     visualization_interval_s=10.0,
-    step_length_s=0.1,
-    visualization_mode=None,
+    show_occupancy_overlay=False,
 ):
     sumo_binary = os.environ.get("SUMO_BINARY", "sumo")
 
@@ -59,16 +58,13 @@ def run_simulation(
     visualizer = None
     if subgraph_file:
         from utils.dual_graph_handler import load_dual_graph
-        from .subgraph_visualization import SubgraphVisualizer
+        from .subgraph_visualization import SubgraphMonitor, SumoGuiOverlay
 
-        sumo_gui = Path(sumo_binary).name == "sumo-gui"
-        visualizer = SubgraphVisualizer(
-            load_dual_graph(str(subgraph_file)).copy(),
-            step_length_s,
-            incident_edge=incident_edge,
-            sumo_gui=sumo_gui,
-            show_overlay=visualization_mode == "gui-overlay",
+        subgraph = load_dual_graph(str(subgraph_file)).copy()
+        visualizer = SumoGuiOverlay(
+            subgraph, incident_edge, show_occupancy_overlay
         )
+        monitor = SubgraphMonitor(subgraph) if show_occupancy_overlay else None
     current_time = 0.0
     incident_started = False
     next_visualization_s = 0.0
@@ -76,11 +72,9 @@ def run_simulation(
         while traci.simulation.getMinExpectedNumber() > 0 and current_time < duration:
             current_time = traci.simulation.getTime()
             if visualizer and current_time >= next_visualization_s:
-                visualizer.update(current_time)
+                if monitor:
+                    visualizer.update(monitor.sample())
                 next_visualization_s += visualization_interval_s
-            if visualizer and not visualizer.wait_for_next_step():
-                visualizer.close()
-                visualizer = None
             if current_time >= incident_start and not incident_started:
                 incident.start(incident_edge, blocked_lane_index)
                 incident_started = True
@@ -120,9 +114,6 @@ def run_from_manifest(
     )
     if visualization_interval_s <= 0.0:
         raise ValueError("simulation.visualization_interval_s must be positive")
-    step_length_s = float(simulation.get("step_length_s", 0.1))
-    if step_length_s <= 0.0:
-        raise ValueError("simulation.step_length_s must be positive")
     configured_visualization = simulation.get("visualization", False)
     if visualization_mode is None:
         visualization_mode = (
@@ -132,17 +123,16 @@ def run_from_manifest(
             if isinstance(configured_visualization, str)
             else None
         )
-    valid_modes = {None, "gui-overlay", "graph-window"}
+    valid_modes = {None, "gui-overlay"}
     if visualization_mode not in valid_modes:
         raise ValueError(
-            "visualization_mode must be None, 'gui-overlay', or 'graph-window'"
+            "visualization_mode must be None or 'gui-overlay'"
         )
     if visualization_mode == "gui-overlay" and Path(
         os.environ.get("SUMO_BINARY", "sumo")
     ).name != "sumo-gui":
         raise ValueError(
-            "--gui-overlay requires SUMO_BINARY=sumo-gui; use "
-            "--graph-window with SUMO_BINARY=sumo"
+            "--gui-overlay requires SUMO_BINARY=sumo-gui"
         )
     detector_tree = ET.parse(Path(manifest["detectors"]).resolve())
     detector_output = output_directory / "e2_output.xml"
@@ -186,13 +176,11 @@ def run_from_manifest(
             output_dir=output_directory,
             subgraph_file=(
                 manifest["subgraph"]
-                if visualization_mode or Path(os.environ.get("SUMO_BINARY", "sumo")).name
-                == "sumo-gui"
+                if Path(os.environ.get("SUMO_BINARY", "sumo")).name == "sumo-gui"
                 else None
             ),
-            visualization_mode=visualization_mode,
             visualization_interval_s=visualization_interval_s,
-            step_length_s=step_length_s,
+            show_occupancy_overlay=visualization_mode == "gui-overlay",
         )
     finally:
         temporary_detector.close()
@@ -217,13 +205,6 @@ if __name__ == "__main__":
         const="gui-overlay",
         dest="visualization_mode",
         help="Color the subgraph streets as overlays in SUMO-GUI.",
-    )
-    visualization_group.add_argument(
-        "--graph-window",
-        action="store_const",
-        const="graph-window",
-        dest="visualization_mode",
-        help="Open the separate live dual-graph window.",
     )
     args = parser.parse_args()
     run_from_manifest(

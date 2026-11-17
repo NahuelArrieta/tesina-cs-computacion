@@ -90,16 +90,13 @@ simulación se crea y controla dinámicamente mediante
 vehículo-obstrucción por TraCI, inicia la obstrucción y libera el carril al
 finalizar el intervalo configurado.
 
-Durante la simulación también se muestra en tiempo real una ventana con la
-visualización del subgrafo upstream definido en `manifest.json`. Cada nodo
-corresponde a una arista de SUMO y se colorea según la ocupación
-`vehículos / capacidad_de_la_arista` (verde: vacía; rojo: sobre su capacidad).
-Así, un vehículo detenido por un semáforo no se interpreta como congestión si
-la arista no está llena, y una arista sin vehículos siempre permanece verde.
-El ancho de cada arista corresponde a su probabilidad de giro (`weight`). La
+Con `SUMO_BINARY=sumo-gui`, la simulación puede mostrar el subgrafo upstream
+directamente sobre las calles reales de SUMO-GUI. Cada calle se colorea según
+la ocupación `vehículos / capacidad_de_la_arista` (verde: vacía; rojo: sobre
+su capacidad). La calle del incidente se marca siempre con un círculo rojo.
+El ancho del overlay representa el mayor turn ratio saliente de la calle. La
 frecuencia de actualización se puede configurar con
-`simulation.visualization_interval_s` y por defecto es de 10 segundos. La
-ventana debe ejecutarse en una sesión gráfica con Matplotlib.
+`simulation.visualization_interval_s` y por defecto es de 10 segundos.
 
 La visualización se puede desactivar para ejecuciones batch o sin entorno
 gráfico con `"visualization": false` dentro de `simulation`. El monitor usa
@@ -111,33 +108,23 @@ suscripciones TraCI para consultar las cantidades de vehículos y mantiene una
   `show="false"` de forma permanente: no se dibujan, pero siguen activos y
   escriben `e2_output.xml`. La calle del incidente se marca siempre con un
   círculo rojo, incluso si no se usa `--gui-overlay`.
-- Con `SUMO_BINARY=sumo`, muestra el subgrafo dual en una ventana Matplotlib,
-  por lo que también se puede inspeccionar la simulación sin SUMO-GUI. La
-  calle del incidente se marca con un círculo rojo en el grafo.
-
-En ambos casos los colores representan `vehículos / capacidad` y el ancho del
-overlay o de las aristas representa el mayor turn ratio saliente de la calle.
-El monitor toma `simulation.step_length_s` para controlar correctamente la
-velocidad de reproducción.
-
-También se puede seleccionar explícitamente el modo desde la línea de
-comandos. Los modos son mutuamente excluyentes:
+La visualización se activa solamente en SUMO-GUI. Se puede seleccionar si se
+muestran únicamente el incidente o también el estado de ocupación:
 
 ```bash
-# Colorear las calles reales dentro de SUMO-GUI
+# Solo marcar el incidente
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.simulator \
+  --manifest experiments/incident_a2b2/manifest.json \
+  --strategy m0
+
+# Marcar el incidente y mostrar la ocupación
 SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.simulator \
   --manifest experiments/incident_a2b2/manifest.json \
   --strategy m0 \
   --gui-overlay
-
-# Abrir la ventana separada del subgrafo dual
-SUMO_BINARY=sumo PYTHONPATH=code python -m simulation.simulator \
-  --manifest experiments/incident_a2b2/manifest.json \
-  --strategy m0 \
-  --graph-window
 ```
 
-Si no se indica ningún flag, la visualización queda desactivada para permitir
+Con `SUMO_BINARY=sumo` no se abre ninguna ventana y la simulación es apta para
 ejecuciones batch o sin entorno gráfico.
 
 ## Etapa 3: ejecución de simulaciones
