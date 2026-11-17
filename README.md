@@ -92,8 +92,10 @@ finalizar el intervalo configurado.
 
 Durante la simulación también se muestra en tiempo real una ventana con la
 visualización del subgrafo upstream definido en `manifest.json`. Cada nodo
-corresponde a una arista de SUMO y se colorea según
-`1 - velocidad_media / velocidad_libre` (verde: libre; rojo: congestionada).
+corresponde a una arista de SUMO y se colorea según la ocupación
+`vehículos / capacidad_de_la_arista` (verde: vacía; rojo: sobre su capacidad).
+Así, un vehículo detenido por un semáforo no se interpreta como congestión si
+la arista no está llena, y una arista sin vehículos siempre permanece verde.
 El ancho de cada arista corresponde a su probabilidad de giro (`weight`). La
 frecuencia de actualización se puede configurar con
 `simulation.visualization_interval_s` y por defecto es de 10 segundos. La

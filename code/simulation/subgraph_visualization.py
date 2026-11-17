@@ -47,23 +47,24 @@ class SubgraphVisualizer:
         congestion: dict[str, float] = {}
         for node, attributes in self.subgraph.nodes(data=True):
             if node not in self._edge_ids:
-                mean_speed = 0.0
                 vehicle_count = 0
                 node_congestion = 0.0
             else:
-                mean_speed = float(traci.edge.getLastStepMeanSpeed(node))
                 vehicle_count = int(traci.edge.getLastStepVehicleNumber(node))
-                speed_limit = float(attributes.get("speed_limit_mps", 0.0))
+                capacity = int(attributes.get("capacity_veh", 0))
                 node_congestion = (
-                    max(0.0, min(1.0, 1.0 - mean_speed / speed_limit))
-                    if speed_limit > 0.0 and vehicle_count > 0
+                    max(0.0, min(1.0, vehicle_count / capacity))
+                    if capacity > 0
                     else 0.0
                 )
             congestion[node] = node_congestion
 
         node_values = [congestion[node] for node in self.subgraph.nodes]
         self._nodes.set_array(node_values)
-        self._axis.set_title(f"Subgraph at t={time_s:.1f}s (edge width = turn ratio)")
+        self._axis.set_title(
+            f"Subgraph at t={time_s:.1f}s "
+            "(node color = vehicles / capacity; edge width = turn ratio)"
+        )
         self._figure.canvas.draw_idle()
         self._figure.canvas.flush_events()
 
@@ -115,7 +116,7 @@ class SubgraphVisualizer:
         colorbar = self._figure.colorbar(
             plt.cm.ScalarMappable(norm=Normalize(0.0, 1.0), cmap="RdYlGn_r"),
             ax=self._axis,
-            label="Congestion (1 - current speed / speed limit)",
+            label="Occupancy (vehicles / edge capacity)",
         )
         colorbar.set_ticks([0.0, 0.5, 1.0])
         self._axis.set_axis_off()
