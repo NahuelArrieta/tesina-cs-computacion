@@ -69,6 +69,8 @@ def run_simulation(
             if visualizer and current_time >= next_visualization_s:
                 visualizer.update(current_time)
                 next_visualization_s += visualization_interval_s
+            if visualizer:
+                visualizer.wait_for_next_step()
             if current_time >= incident_start and not incident_started:
                 incident.start(incident_edge, blocked_lane_index)
                 incident_started = True

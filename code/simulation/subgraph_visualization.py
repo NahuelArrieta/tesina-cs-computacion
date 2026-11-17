@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib
+import time
+import tkinter as tk
 
 import matplotlib
 
@@ -40,6 +42,10 @@ class SubgraphVisualizer:
         self._figure.canvas.manager.set_window_title("SUMO subgraph monitor")
         self._figure.show()
         self._configure_overlay_window()
+        self._paused = False
+        self._playback_speed = 1.0
+        self._last_step_wall_time = time.monotonic()
+        self._configure_controls()
         self._draw_static_graph()
 
     def update(self, time_s: float) -> None:
@@ -71,6 +77,60 @@ class SubgraphVisualizer:
     def close(self) -> None:
         """Close the live visualization window."""
         plt.close(self._figure)
+
+    def wait_for_next_step(self) -> None:
+        """Process controls and pace simulation time according to playback speed."""
+        self._process_events()
+        while self._paused:
+            time.sleep(0.05)
+            self._process_events()
+        target_interval = 0.1 / self._playback_speed
+        elapsed = time.monotonic() - self._last_step_wall_time
+        if elapsed < target_interval:
+            time.sleep(target_interval - elapsed)
+            self._process_events()
+        self._last_step_wall_time = time.monotonic()
+
+    def _process_events(self) -> None:
+        """Process GUI events without yielding focus to the monitor."""
+        self._figure.canvas.flush_events()
+        self._figure.canvas.manager.window.update_idletasks()
+        self._figure.canvas.manager.window.update()
+
+    def _configure_controls(self) -> None:
+        """Add keyboard controls to the monitor window."""
+        window = self._figure.canvas.manager.window
+        controls = tk.Frame(window)
+        controls.pack(side=tk.BOTTOM, fill=tk.X)
+        tk.Button(
+            controls, text="Pause / resume", command=self._toggle_pause
+        ).pack(side=tk.LEFT)
+        tk.Button(
+            controls, text="Slower (-)", command=lambda: self._change_speed(0.5)
+        ).pack(side=tk.LEFT)
+        tk.Button(
+            controls, text="Faster (+)", command=lambda: self._change_speed(2.0)
+        ).pack(side=tk.LEFT)
+        window.bind("<space>", lambda _event: self._toggle_pause())
+        window.bind("<plus>", lambda _event: self._change_speed(2.0))
+        window.bind("<equal>", lambda _event: self._change_speed(2.0))
+        window.bind("<minus>", lambda _event: self._change_speed(0.5))
+        window.bind("<KP_Add>", lambda _event: self._change_speed(2.0))
+        window.bind("<KP_Subtract>", lambda _event: self._change_speed(0.5))
+
+    def _toggle_pause(self) -> None:
+        self._paused = not self._paused
+        self._update_status_title()
+
+    def _change_speed(self, multiplier: float) -> None:
+        self._playback_speed = max(0.125, min(8.0, self._playback_speed * multiplier))
+        self._update_status_title()
+
+    def _update_status_title(self) -> None:
+        state = "PAUSED" if self._paused else "RUNNING"
+        self._figure.canvas.manager.set_window_title(
+            f"SUMO subgraph monitor - {state} - {self._playback_speed:g}x"
+        )
 
     def _configure_overlay_window(self) -> None:
         """Keep the monitor above SUMO without repeatedly taking focus."""
