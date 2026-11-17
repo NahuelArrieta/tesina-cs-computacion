@@ -109,10 +109,11 @@ suscripciones TraCI para consultar las cantidades de vehículos y mantiene una
 - Con `SUMO_BINARY=sumo-gui`, colorea las aristas reales de SUMO-GUI mediante
   overlays sobre la geometría de cada calle. Los detectores E2 se definen con
   `show="false"` de forma permanente: no se dibujan, pero siguen activos y
-  escriben `e2_output.xml`.
+  escriben `e2_output.xml`. La calle del incidente se marca siempre con un
+  círculo rojo, incluso si no se usa `--gui-overlay`.
 - Con `SUMO_BINARY=sumo`, muestra el subgrafo dual en una ventana Matplotlib,
-  por lo que también se puede inspeccionar la simulación sin SUMO-GUI (pero
-  todavía se necesita una sesión gráfica para esa ventana).
+  por lo que también se puede inspeccionar la simulación sin SUMO-GUI. La
+  calle del incidente se marca con un círculo rojo en el grafo.
 
 En ambos casos los colores representan `vehículos / capacidad` y el ancho del
 overlay o de las aristas representa el mayor turn ratio saliente de la calle.

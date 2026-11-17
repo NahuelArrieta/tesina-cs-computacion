@@ -61,10 +61,13 @@ def run_simulation(
         from utils.dual_graph_handler import load_dual_graph
         from .subgraph_visualization import SubgraphVisualizer
 
+        sumo_gui = Path(sumo_binary).name == "sumo-gui"
         visualizer = SubgraphVisualizer(
             load_dual_graph(str(subgraph_file)).copy(),
             step_length_s,
-            sumo_gui=visualization_mode == "gui-overlay",
+            incident_edge=incident_edge,
+            sumo_gui=sumo_gui,
+            show_overlay=visualization_mode == "gui-overlay",
         )
     current_time = 0.0
     incident_started = False
@@ -181,7 +184,12 @@ def run_from_manifest(
             blocked_lane_index=int(incident.get("blocked_lane", 0)),
             sumo_file=temporary_config.name,
             output_dir=output_directory,
-            subgraph_file=manifest["subgraph"] if visualization_mode else None,
+            subgraph_file=(
+                manifest["subgraph"]
+                if visualization_mode or Path(os.environ.get("SUMO_BINARY", "sumo")).name
+                == "sumo-gui"
+                else None
+            ),
             visualization_mode=visualization_mode,
             visualization_interval_s=visualization_interval_s,
             step_length_s=step_length_s,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import math
 import time
 from dataclasses import dataclass
 from typing import Mapping
@@ -76,13 +77,16 @@ class SubgraphMonitor:
 class SumoGuiRenderer:
     """Color the real SUMO-GUI streets with transparent polygon overlays."""
 
-    def __init__(self, subgraph: nx.DiGraph) -> None:
+    def __init__(self, subgraph: nx.DiGraph, incident_edge: str, show_overlay: bool) -> None:
         self._polygon_ids = {
             node: f"subgraph-monitor-{node}" for node in subgraph.nodes
         }
         self._active_polygon_ids: set[str] = set()
+        self._incident_polygon_id = "subgraph-monitor-incident"
         self._closed = False
         for node in subgraph.nodes:
+            if not show_overlay:
+                break
             shape = self._get_edge_shape(node)
             if shape:
                 polygon_id = self._polygon_ids[node]
@@ -106,6 +110,25 @@ class SumoGuiRenderer:
                     ),
                 )
                 self._active_polygon_ids.add(polygon_id)
+        incident_shape = self._get_edge_shape(incident_edge)
+        if incident_shape:
+            midpoint = self._polyline_midpoint(incident_shape)
+            marker_shape = [
+                (
+                    midpoint[0] + 15.0 * math.cos(angle),
+                    midpoint[1] + 15.0 * math.sin(angle),
+                )
+                for angle in [i * math.pi / 12 for i in range(24)]
+            ]
+            traci.polygon.add(
+                self._incident_polygon_id,
+                marker_shape,
+                (220, 0, 0, 220),
+                fill=True,
+                layer=101,
+                lineWidth=3.0,
+            )
+            self._active_polygon_ids.add(self._incident_polygon_id)
 
     def update(
         self, time_s: float, measurements: Mapping[str, EdgeMeasurement]
@@ -149,11 +172,41 @@ class SumoGuiRenderer:
             for x, y in traci.lane.getShape(lane_ids[0])
         ]
 
+    @staticmethod
+    def _polyline_midpoint(
+        shape: list[tuple[float, float]],
+    ) -> tuple[float, float]:
+        """Return the point halfway along a lane polyline."""
+        lengths = [
+            math.hypot(
+                shape[index + 1][0] - shape[index][0],
+                shape[index + 1][1] - shape[index][1],
+            )
+            for index in range(len(shape) - 1)
+        ]
+        half_length = sum(lengths) / 2.0
+        distance = 0.0
+        for index, segment_length in enumerate(lengths):
+            if distance + segment_length >= half_length:
+                ratio = (
+                    (half_length - distance) / segment_length
+                    if segment_length > 0.0
+                    else 0.0
+                )
+                start = shape[index]
+                end = shape[index + 1]
+                return (
+                    start[0] + ratio * (end[0] - start[0]),
+                    start[1] + ratio * (end[1] - start[1]),
+                )
+            distance += segment_length
+        return shape[len(shape) // 2]
+
 
 class SubgraphRenderer:
     """Render fixed graph topology and update only live node colors."""
 
-    def __init__(self, subgraph: nx.DiGraph) -> None:
+    def __init__(self, subgraph: nx.DiGraph, incident_edge: str) -> None:
         _configure_interactive_backend()
         import matplotlib.pyplot as plt
         from matplotlib.colors import Normalize
@@ -162,6 +215,7 @@ class SubgraphRenderer:
         self._plt = plt
         self._normalize = Normalize
         self._title = None
+        self._incident_edge = incident_edge
         self._positions = {
             node: (float(data.get("x", 0.0)), float(data.get("y", 0.0)))
             for node, data in subgraph.nodes(data=True)
@@ -238,6 +292,16 @@ class SubgraphRenderer:
             font_size=7,
             font_color="black",
         )
+        if incident_edge := self._positions.get(self._incident_edge):
+            self.axis.scatter(
+                [incident_edge[0]],
+                [incident_edge[1]],
+                s=1300,
+                facecolors="none",
+                edgecolors="#d00000",
+                linewidths=3.0,
+                zorder=5,
+            )
         colorbar = self.figure.colorbar(
             self._plt.cm.ScalarMappable(
                 norm=self._normalize(0.0, 1.0), cmap="RdYlGn_r"
@@ -337,12 +401,19 @@ class SubgraphVisualizer:
     """Coordinate monitoring, rendering, and playback controls."""
 
     def __init__(
-        self, subgraph: nx.DiGraph, step_length_s: float, sumo_gui: bool = False
+        self,
+        subgraph: nx.DiGraph,
+        step_length_s: float,
+        incident_edge: str,
+        sumo_gui: bool = False,
+        show_overlay: bool = False,
     ) -> None:
         self._renderer = (
-            SumoGuiRenderer(subgraph) if sumo_gui else SubgraphRenderer(subgraph)
+            SumoGuiRenderer(subgraph, incident_edge, show_overlay)
+            if sumo_gui
+            else SubgraphRenderer(subgraph, incident_edge)
         )
-        self._monitor = SubgraphMonitor(subgraph)
+        self._monitor = SubgraphMonitor(subgraph) if show_overlay or not sumo_gui else None
         self._controller = PlaybackController(
             self._renderer,
             step_length_s,
@@ -351,7 +422,8 @@ class SubgraphVisualizer:
 
     def update(self, time_s: float) -> None:
         """Sample TraCI and update the live graph."""
-        self._renderer.update(time_s, self._monitor.sample())
+        measurements = self._monitor.sample() if self._monitor else {}
+        self._renderer.update(time_s, measurements)
 
     def wait_for_next_step(self) -> bool:
         """Process controls and return whether the monitor remains open."""
