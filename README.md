@@ -90,6 +90,43 @@ simulación se crea y controla dinámicamente mediante
 vehículo-obstrucción por TraCI, inicia la obstrucción y libera el carril al
 finalizar el intervalo configurado.
 
+Con `SUMO_BINARY=sumo-gui`, la simulación puede mostrar el subgrafo upstream
+directamente sobre las calles reales de SUMO-GUI. Cada calle se colorea según
+la ocupación `vehículos / capacidad_de_la_arista` (verde: vacía; rojo: sobre
+su capacidad). La calle del incidente se marca siempre con un círculo rojo.
+El ancho del overlay representa el mayor turn ratio saliente de la calle. La
+frecuencia de actualización se puede configurar con
+`simulation.visualization_interval_s` y por defecto es de 10 segundos.
+
+La visualización se puede desactivar para ejecuciones batch o sin entorno
+gráfico con `"visualization": false` dentro de `simulation`. El monitor usa
+suscripciones TraCI para consultar las cantidades de vehículos y mantiene una
+única fuente de mediciones para dos backends:
+
+- Con `SUMO_BINARY=sumo-gui`, colorea las aristas reales de SUMO-GUI mediante
+  overlays sobre la geometría de cada calle. Los detectores E2 se definen con
+  `show="false"` de forma permanente: no se dibujan, pero siguen activos y
+  escriben `e2_output.xml`. La calle del incidente se marca siempre con un
+  círculo rojo, incluso si no se usa `--gui-overlay`.
+La visualización se activa solamente en SUMO-GUI. Se puede seleccionar si se
+muestran únicamente el incidente o también el estado de ocupación:
+
+```bash
+# Solo marcar el incidente
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.simulator \
+  --manifest experiments/incident_a2b2/manifest.json \
+  --strategy m0
+
+# Marcar el incidente y mostrar la ocupación
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.simulator \
+  --manifest experiments/incident_a2b2/manifest.json \
+  --strategy m0 \
+  --gui-overlay
+```
+
+Con `SUMO_BINARY=sumo` no se abre ninguna ventana y la simulación es apta para
+ejecuciones batch o sin entorno gráfico.
+
 ## Etapa 3: ejecución de simulaciones
 
 La simulación recibe el manifiesto de un experimento generado por la Etapa 2

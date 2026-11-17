@@ -21,6 +21,9 @@ def run_simulation(
     output_dir=None,
     blocked_lane_index=0,
     additional_file=None,
+    subgraph_file=None,
+    visualization_interval_s=10.0,
+    show_occupancy_overlay=False,
 ):
     sumo_binary = os.environ.get("SUMO_BINARY", "sumo")
 
@@ -52,11 +55,26 @@ def run_simulation(
 
     traci.start(sumo_cmd)
     incident = IncidentManager()
+    visualizer = None
+    if subgraph_file:
+        from utils.dual_graph_handler import load_dual_graph
+        from .subgraph_visualization import SubgraphMonitor, SumoGuiOverlay
+
+        subgraph = load_dual_graph(str(subgraph_file)).copy()
+        visualizer = SumoGuiOverlay(
+            subgraph, incident_edge, show_occupancy_overlay
+        )
+        monitor = SubgraphMonitor(subgraph) if show_occupancy_overlay else None
     current_time = 0.0
     incident_started = False
+    next_visualization_s = 0.0
     try:
         while traci.simulation.getMinExpectedNumber() > 0 and current_time < duration:
             current_time = traci.simulation.getTime()
+            if visualizer and current_time >= next_visualization_s:
+                if monitor:
+                    visualizer.update(monitor.sample())
+                next_visualization_s += visualization_interval_s
             if current_time >= incident_start and not incident_started:
                 incident.start(incident_edge, blocked_lane_index)
                 incident_started = True
@@ -67,10 +85,16 @@ def run_simulation(
         if incident.is_active:
             incident.end()
         traci.close()
+        if visualizer:
+            visualizer.close()
         print(f"Simulation finished at time {current_time:.2f} seconds.")
 
 
-def run_from_manifest(manifest_file: str | Path, strategy: str) -> Path:
+def run_from_manifest(
+    manifest_file: str | Path,
+    strategy: str,
+    visualization_mode: str | None = None,
+) -> Path:
     """Run one strategy using an experiment manifest and save raw outputs."""
     manifest_path = Path(manifest_file).resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -85,6 +109,31 @@ def run_from_manifest(manifest_file: str | Path, strategy: str) -> Path:
     incident = manifest["incident"]
     simulation = manifest.get("simulation", {})
     duration = float(simulation.get("end_s", 3600.0))
+    visualization_interval_s = float(
+        simulation.get("visualization_interval_s", 10.0)
+    )
+    if visualization_interval_s <= 0.0:
+        raise ValueError("simulation.visualization_interval_s must be positive")
+    configured_visualization = simulation.get("visualization", False)
+    if visualization_mode is None:
+        visualization_mode = (
+            "gui-overlay"
+            if configured_visualization is True
+            else configured_visualization
+            if isinstance(configured_visualization, str)
+            else None
+        )
+    valid_modes = {None, "gui-overlay"}
+    if visualization_mode not in valid_modes:
+        raise ValueError(
+            "visualization_mode must be None or 'gui-overlay'"
+        )
+    if visualization_mode == "gui-overlay" and Path(
+        os.environ.get("SUMO_BINARY", "sumo")
+    ).name != "sumo-gui":
+        raise ValueError(
+            "--gui-overlay requires SUMO_BINARY=sumo-gui"
+        )
     detector_tree = ET.parse(Path(manifest["detectors"]).resolve())
     detector_output = output_directory / "e2_output.xml"
     for detector in detector_tree.getroot().iter("laneAreaDetector"):
@@ -125,6 +174,13 @@ def run_from_manifest(manifest_file: str | Path, strategy: str) -> Path:
             blocked_lane_index=int(incident.get("blocked_lane", 0)),
             sumo_file=temporary_config.name,
             output_dir=output_directory,
+            subgraph_file=(
+                manifest["subgraph"]
+                if Path(os.environ.get("SUMO_BINARY", "sumo")).name == "sumo-gui"
+                else None
+            ),
+            visualization_interval_s=visualization_interval_s,
+            show_occupancy_overlay=visualization_mode == "gui-overlay",
         )
     finally:
         temporary_detector.close()
@@ -142,5 +198,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run one experiment strategy")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--strategy", required=True, choices=("m0", "m1", "m2", "m3"))
+    visualization_group = parser.add_mutually_exclusive_group()
+    visualization_group.add_argument(
+        "--gui-overlay",
+        action="store_const",
+        const="gui-overlay",
+        dest="visualization_mode",
+        help="Color the subgraph streets as overlays in SUMO-GUI.",
+    )
     args = parser.parse_args()
-    run_from_manifest(args.manifest, args.strategy)
+    run_from_manifest(
+        args.manifest,
+        args.strategy,
+        visualization_mode=args.visualization_mode,
+    )

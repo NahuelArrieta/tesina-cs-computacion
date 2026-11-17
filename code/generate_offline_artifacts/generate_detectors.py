@@ -61,7 +61,8 @@ def generate_e2_detectors(
                     "length": f"{detector_length:.2f}",
                     "freq": str(detector_freq),
                     "file": output_xml_target,
-                    "friendlyPos": "true"
+                    "friendlyPos": "true",
+                    "show": "false",
                 }
             )
             detector_count += 1
