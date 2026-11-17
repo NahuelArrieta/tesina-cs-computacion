@@ -161,6 +161,7 @@ class SubgraphRenderer:
         self._subgraph = subgraph
         self._plt = plt
         self._normalize = Normalize
+        self._title = None
         self._positions = {
             node: (float(data.get("x", 0.0)), float(data.get("y", 0.0)))
             for node, data in subgraph.nodes(data=True)
@@ -178,7 +179,7 @@ class SubgraphRenderer:
         self._nodes.set_array(
             [measurements[node].occupancy for node in self._subgraph.nodes]
         )
-        self.axis.set_title(
+        self._title.set_text(
             f"Subgraph at t={time_s:.1f}s "
             "(node color = vehicles / capacity; edge width = turn ratio)"
         )
@@ -246,7 +247,12 @@ class SubgraphRenderer:
         )
         colorbar.set_ticks([0.0, 0.5, 1.0])
         self.axis.set_axis_off()
-        self.figure.tight_layout()
+        self._title = self.figure.suptitle(
+            "Subgraph monitor",
+            y=0.98,
+            fontsize=12,
+        )
+        self.figure.subplots_adjust(top=0.90, bottom=0.04, left=0.02, right=0.93)
 
 
 class PlaybackController:
