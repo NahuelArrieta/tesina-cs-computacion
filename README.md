@@ -101,6 +101,42 @@ frecuencia de actualización se puede configurar con
 `simulation.visualization_interval_s` y por defecto es de 10 segundos. La
 ventana debe ejecutarse en una sesión gráfica con Matplotlib.
 
+La visualización se puede desactivar para ejecuciones batch o sin entorno
+gráfico con `"visualization": false` dentro de `simulation`. El monitor usa
+suscripciones TraCI para consultar las cantidades de vehículos y mantiene una
+única fuente de mediciones para dos backends:
+
+- Con `SUMO_BINARY=sumo-gui`, colorea las aristas reales de SUMO-GUI mediante
+  overlays sobre la geometría de cada calle.
+- Con `SUMO_BINARY=sumo`, muestra el subgrafo dual en una ventana Matplotlib,
+  por lo que también se puede inspeccionar la simulación sin SUMO-GUI (pero
+  todavía se necesita una sesión gráfica para esa ventana).
+
+En ambos casos los colores representan `vehículos / capacidad` y el ancho del
+overlay o de las aristas representa el mayor turn ratio saliente de la calle.
+El monitor toma `simulation.step_length_s` para controlar correctamente la
+velocidad de reproducción.
+
+También se puede seleccionar explícitamente el modo desde la línea de
+comandos. Los modos son mutuamente excluyentes:
+
+```bash
+# Colorear las calles reales dentro de SUMO-GUI
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.simulator \
+  --manifest experiments/incident_a2b2/manifest.json \
+  --strategy m0 \
+  --gui-overlay
+
+# Abrir la ventana separada del subgrafo dual
+SUMO_BINARY=sumo PYTHONPATH=code python -m simulation.simulator \
+  --manifest experiments/incident_a2b2/manifest.json \
+  --strategy m0 \
+  --graph-window
+```
+
+Si no se indica ningún flag, la visualización queda desactivada para permitir
+ejecuciones batch o sin entorno gráfico.
+
 ## Etapa 3: ejecución de simulaciones
 
 La simulación recibe el manifiesto de un experimento generado por la Etapa 2

@@ -1,10 +1,11 @@
-"""Live visualization of a dual-graph subgraph using TraCI measurements."""
+"""Interactive monitoring of a dual-graph subgraph during a TraCI simulation."""
 
 from __future__ import annotations
 
 import importlib
 import time
-import tkinter as tk
+from dataclasses import dataclass
+from typing import Mapping
 
 import matplotlib
 
@@ -16,90 +17,283 @@ def _configure_interactive_backend() -> None:
     except ImportError as error:
         raise RuntimeError(
             "Live visualization needs tkinter. Install it with "
-            "'sudo apt install python3-tk', then rerun the simulation."
+            "'sudo apt install python3-tk'."
         ) from error
     matplotlib.use("TkAgg", force=True)
 
 
-_configure_interactive_backend()
-import matplotlib.pyplot as plt
 import networkx as nx
 import traci
-from matplotlib.colors import Normalize
 
 
-class SubgraphVisualizer:
-    """Render a dual graph with live congestion and turning probabilities."""
+@dataclass(frozen=True)
+class EdgeMeasurement:
+    """Live occupancy measurement for one SUMO edge."""
+
+    vehicle_count: int
+    occupancy: float
+
+
+class SubgraphMonitor:
+    """Collect edge vehicle counts through TraCI subscriptions."""
 
     def __init__(self, subgraph: nx.DiGraph) -> None:
-        self.subgraph = subgraph
-        self._edge_ids = set(traci.edge.getIDList())
+        self._subgraph = subgraph
+        self._capacities = {
+            node: int(data.get("capacity_veh", 0))
+            for node, data in subgraph.nodes(data=True)
+        }
+        edge_ids = set(traci.edge.getIDList())
+        self._edge_ids = [
+            node for node in subgraph.nodes if node in edge_ids
+        ]
+        for edge_id in self._edge_ids:
+            traci.edge.subscribe(
+                edge_id,
+                (traci.constants.LAST_STEP_VEHICLE_NUMBER,),
+            )
+
+    def sample(self) -> dict[str, EdgeMeasurement]:
+        """Return the latest vehicle counts and normalized occupancies."""
+        measurements: dict[str, EdgeMeasurement] = {}
+        for node in self._subgraph.nodes:
+            results = traci.edge.getSubscriptionResults(node)
+            vehicle_count = int(
+                results.get(traci.constants.LAST_STEP_VEHICLE_NUMBER, 0)
+                if results
+                else 0
+            )
+            capacity = self._capacities[node]
+            occupancy = (
+                max(0.0, min(1.0, vehicle_count / capacity))
+                if capacity > 0
+                else 0.0
+            )
+            measurements[node] = EdgeMeasurement(vehicle_count, occupancy)
+        return measurements
+
+
+class SumoGuiRenderer:
+    """Color the real SUMO-GUI streets with transparent polygon overlays."""
+
+    def __init__(self, subgraph: nx.DiGraph) -> None:
+        self._polygon_ids = {
+            node: f"subgraph-monitor-{node}" for node in subgraph.nodes
+        }
+        self._active_polygon_ids: set[str] = set()
+        self._closed = False
+        for node in subgraph.nodes:
+            shape = self._get_edge_shape(node)
+            if shape:
+                polygon_id = self._polygon_ids[node]
+                traci.polygon.add(
+                    polygon_id,
+                    shape,
+                    (0, 180, 0, 180),
+                    fill=False,
+                    layer=100,
+                    lineWidth=max(
+                        2.0,
+                        2.0
+                        + 8.0
+                        * max(
+                            (
+                                float(data.get("weight", 0.0))
+                                for _, _, data in subgraph.out_edges(node, data=True)
+                            ),
+                            default=0.0,
+                        ),
+                    ),
+                )
+                self._active_polygon_ids.add(polygon_id)
+
+    def update(
+        self, time_s: float, measurements: Mapping[str, EdgeMeasurement]
+    ) -> None:
+        """Update SUMO-GUI overlay colors."""
+        for node, measurement in measurements.items():
+            polygon_id = self._polygon_ids[node]
+            if polygon_id not in self._active_polygon_ids:
+                continue
+            occupancy = measurement.occupancy
+            red = int(255 * occupancy)
+            green = int(255 * (1.0 - occupancy))
+            traci.polygon.setColor(
+                polygon_id, (red, green, 0, 180)
+            )
+
+    def is_open(self) -> bool:
+        return not self._closed
+
+    def process_events(self) -> None:
+        return
+
+    def close(self) -> None:
+        if not self._closed:
+            for polygon_id in self._active_polygon_ids:
+                traci.polygon.remove(polygon_id, layer=100)
+            self._closed = True
+
+    @staticmethod
+    def _get_edge_shape(edge_id: str) -> list[tuple[float, float]]:
+        """Return the geometry of the first lane belonging to an edge."""
+        lane_ids = [
+            lane_id
+            for lane_id in traci.lane.getIDList()
+            if traci.lane.getEdgeID(lane_id) == edge_id
+        ]
+        if not lane_ids:
+            return []
+        return [
+            (float(x), float(y))
+            for x, y in traci.lane.getShape(lane_ids[0])
+        ]
+
+
+class SubgraphRenderer:
+    """Render fixed graph topology and update only live node colors."""
+
+    def __init__(self, subgraph: nx.DiGraph) -> None:
+        _configure_interactive_backend()
+        import matplotlib.pyplot as plt
+        from matplotlib.colors import Normalize
+
+        self._subgraph = subgraph
+        self._plt = plt
+        self._normalize = Normalize
         self._positions = {
             node: (float(data.get("x", 0.0)), float(data.get("y", 0.0)))
             for node, data in subgraph.nodes(data=True)
         }
-        self._figure, self._axis = plt.subplots(figsize=(12, 9))
-        self._figure.canvas.manager.set_window_title("SUMO subgraph monitor")
-        self._figure.show()
+        self.figure, self.axis = self._plt.subplots(figsize=(12, 9))
+        self.figure.canvas.manager.set_window_title("SUMO subgraph monitor")
+        self.figure.show()
         self._configure_overlay_window()
-        self._paused = False
-        self._playback_speed = 1.0
-        self._last_step_wall_time = time.monotonic()
-        self._configure_controls()
         self._draw_static_graph()
 
-    def update(self, time_s: float) -> None:
-        """Sample TraCI and refresh the lightweight live visualization."""
-        congestion: dict[str, float] = {}
-        for node, attributes in self.subgraph.nodes(data=True):
-            if node not in self._edge_ids:
-                vehicle_count = 0
-                node_congestion = 0.0
-            else:
-                vehicle_count = int(traci.edge.getLastStepVehicleNumber(node))
-                capacity = int(attributes.get("capacity_veh", 0))
-                node_congestion = (
-                    max(0.0, min(1.0, vehicle_count / capacity))
-                    if capacity > 0
-                    else 0.0
-                )
-            congestion[node] = node_congestion
-
-        node_values = [congestion[node] for node in self.subgraph.nodes]
-        self._nodes.set_array(node_values)
-        self._axis.set_title(
+    def update(
+        self, time_s: float, measurements: Mapping[str, EdgeMeasurement]
+    ) -> None:
+        """Update node colors and title without rebuilding the graph."""
+        self._nodes.set_array(
+            [measurements[node].occupancy for node in self._subgraph.nodes]
+        )
+        self.axis.set_title(
             f"Subgraph at t={time_s:.1f}s "
             "(node color = vehicles / capacity; edge width = turn ratio)"
         )
-        self._figure.canvas.draw_idle()
-        self._figure.canvas.flush_events()
+        self.figure.canvas.draw_idle()
+
+    def is_open(self) -> bool:
+        """Return whether the monitor window still exists."""
+        return self._plt.fignum_exists(self.figure.number)
+
+    def process_events(self) -> None:
+        """Process GUI events without deliberately taking focus."""
+        self.figure.canvas.flush_events()
+        self.figure.canvas.manager.window.update_idletasks()
+        self.figure.canvas.manager.window.update()
 
     def close(self) -> None:
         """Close the live visualization window."""
-        plt.close(self._figure)
+        self._plt.close(self.figure)
 
-    def wait_for_next_step(self) -> None:
-        """Process controls and pace simulation time according to playback speed."""
+    def _configure_overlay_window(self) -> None:
+        window = self.figure.canvas.manager.window
+        window.wm_attributes("-topmost", True)
+        window.attributes("-topmost", True)
+        window.focusmodel("passive")
+
+    def _draw_static_graph(self) -> None:
+        nx.draw_networkx_edges(
+            self._subgraph,
+            self._positions,
+            ax=self.axis,
+            width=[
+                1.0 + 8.0 * float(attributes.get("weight", 0.0))
+                for _, _, attributes in self._subgraph.edges(data=True)
+            ],
+            edge_color="#555555",
+            arrows=True,
+            arrowsize=16,
+            connectionstyle="arc3,rad=0.04",
+        )
+        self._nodes = nx.draw_networkx_nodes(
+            self._subgraph,
+            self._positions,
+            ax=self.axis,
+            node_color=[0.0] * self._subgraph.number_of_nodes(),
+            cmap="RdYlGn_r",
+            vmin=0.0,
+            vmax=1.0,
+            node_size=700,
+            edgecolors="black",
+            linewidths=0.8,
+        )
+        nx.draw_networkx_labels(
+            self._subgraph,
+            self._positions,
+            ax=self.axis,
+            font_size=7,
+            font_color="black",
+        )
+        colorbar = self.figure.colorbar(
+            self._plt.cm.ScalarMappable(
+                norm=self._normalize(0.0, 1.0), cmap="RdYlGn_r"
+            ),
+            ax=self.axis,
+            label="Occupancy (vehicles / edge capacity)",
+        )
+        colorbar.set_ticks([0.0, 0.5, 1.0])
+        self.axis.set_axis_off()
+        self.figure.tight_layout()
+
+
+class PlaybackController:
+    """Handle monitor controls and pace SUMO without owning TraCI."""
+
+    def __init__(
+        self,
+        renderer: SubgraphRenderer | SumoGuiRenderer,
+        step_length_s: float,
+        interactive_controls: bool,
+    ) -> None:
+        if step_length_s <= 0.0:
+            raise ValueError("step_length_s must be positive")
+        self._renderer = renderer
+        self._step_length_s = step_length_s
+        self._paused = False
+        self._playback_speed = 1.0
+        self._last_step_wall_time = time.monotonic()
+        self._interactive_controls = interactive_controls
+        if interactive_controls:
+            self._configure_controls()
+
+    def wait_for_next_step(self) -> bool:
+        """Process controls and wait until the next SUMO step may run."""
+        if not self._interactive_controls:
+            return True
         self._process_events()
-        while self._paused:
+        while self._paused and self._renderer.is_open():
             time.sleep(0.05)
             self._process_events()
-        target_interval = 0.1 / self._playback_speed
+        if not self._renderer.is_open():
+            return False
+        target_interval = self._step_length_s / self._playback_speed
         elapsed = time.monotonic() - self._last_step_wall_time
         if elapsed < target_interval:
             time.sleep(target_interval - elapsed)
             self._process_events()
         self._last_step_wall_time = time.monotonic()
+        return self._renderer.is_open()
 
     def _process_events(self) -> None:
-        """Process GUI events without yielding focus to the monitor."""
-        self._figure.canvas.flush_events()
-        self._figure.canvas.manager.window.update_idletasks()
-        self._figure.canvas.manager.window.update()
+        self._renderer.process_events()
 
     def _configure_controls(self) -> None:
-        """Add keyboard controls to the monitor window."""
-        window = self._figure.canvas.manager.window
+        import tkinter as tk
+
+        window = self._renderer.figure.canvas.manager.window
         controls = tk.Frame(window)
         controls.pack(side=tk.BOTTOM, fill=tk.X)
         tk.Button(
@@ -128,56 +322,35 @@ class SubgraphVisualizer:
 
     def _update_status_title(self) -> None:
         state = "PAUSED" if self._paused else "RUNNING"
-        self._figure.canvas.manager.set_window_title(
+        self._renderer.figure.canvas.manager.set_window_title(
             f"SUMO subgraph monitor - {state} - {self._playback_speed:g}x"
         )
 
-    def _configure_overlay_window(self) -> None:
-        """Keep the monitor above SUMO without repeatedly taking focus."""
-        window = self._figure.canvas.manager.window
-        window.wm_attributes("-topmost", True)
-        window.attributes("-topmost", True)
-        window.focusmodel("passive")
 
-    def _draw_static_graph(self) -> None:
-        """Draw graph topology and return reusable node artists."""
-        nx.draw_networkx_edges(
-            self.subgraph,
-            self._positions,
-            ax=self._axis,
-            width=[
-                1.0 + 8.0 * float(attributes.get("weight", 0.0))
-                for _, _, attributes in self.subgraph.edges(data=True)
-            ],
-            edge_color="#555555",
-            arrows=True,
-            arrowsize=16,
-            connectionstyle="arc3,rad=0.04",
+class SubgraphVisualizer:
+    """Coordinate monitoring, rendering, and playback controls."""
+
+    def __init__(
+        self, subgraph: nx.DiGraph, step_length_s: float, sumo_gui: bool = False
+    ) -> None:
+        self._renderer = (
+            SumoGuiRenderer(subgraph) if sumo_gui else SubgraphRenderer(subgraph)
         )
-        self._nodes = nx.draw_networkx_nodes(
-            self.subgraph,
-            self._positions,
-            ax=self._axis,
-            node_color=[0.0] * self.subgraph.number_of_nodes(),
-            cmap="RdYlGn_r",
-            vmin=0.0,
-            vmax=1.0,
-            node_size=700,
-            edgecolors="black",
-            linewidths=0.8,
+        self._monitor = SubgraphMonitor(subgraph)
+        self._controller = PlaybackController(
+            self._renderer,
+            step_length_s,
+            interactive_controls=not sumo_gui,
         )
-        nx.draw_networkx_labels(
-            self.subgraph,
-            self._positions,
-            ax=self._axis,
-            font_size=7,
-            font_color="black",
-        )
-        colorbar = self._figure.colorbar(
-            plt.cm.ScalarMappable(norm=Normalize(0.0, 1.0), cmap="RdYlGn_r"),
-            ax=self._axis,
-            label="Occupancy (vehicles / edge capacity)",
-        )
-        colorbar.set_ticks([0.0, 0.5, 1.0])
-        self._axis.set_axis_off()
-        self._figure.tight_layout()
+
+    def update(self, time_s: float) -> None:
+        """Sample TraCI and update the live graph."""
+        self._renderer.update(time_s, self._monitor.sample())
+
+    def wait_for_next_step(self) -> bool:
+        """Process controls and return whether the monitor remains open."""
+        return self._controller.wait_for_next_step()
+
+    def close(self) -> None:
+        """Close the live visualization window."""
+        self._renderer.close()
