@@ -18,7 +18,6 @@ def run_experiment(manifest_file: Path, strategy: str) -> None:
     experiment_directory = Path(manifest["experiment_directory"]).resolve()
     metrics_directory = experiment_directory / "metrics" / strategy
     incident = manifest["incident"]
-    simulation = manifest["simulation"]
 
     run_from_manifest(manifest_file, strategy)
     process_metrics(
@@ -26,7 +25,7 @@ def run_experiment(manifest_file: Path, strategy: str) -> None:
         output_dir=output_directory,
         incident_start_s=float(incident["begin_s"]),
         incident_end_s=float(incident["end_s"]),
-        sim_duration_seconds=float(simulation["end_s"]),
+        sim_duration_seconds=float(manifest["end_s"]),
         export_dir=metrics_directory,
         name="",
         graph_file=manifest["graph"],

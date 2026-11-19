@@ -50,7 +50,6 @@ def extract_metrics(config_file: Path) -> list[dict[str, Any]]:
         raise ValueError("strategies must be a non-empty list")
 
     incident = manifest["incident"]
-    simulation = manifest["simulation"]
     results: list[dict[str, Any]] = []
     for strategy in strategies:
         strategy_name = str(strategy)
@@ -61,7 +60,7 @@ def extract_metrics(config_file: Path) -> list[dict[str, Any]]:
             output_dir=raw_output,
             incident_start_s=float(incident["begin_s"]),
             incident_end_s=float(incident["end_s"]),
-            sim_duration_seconds=float(simulation["end_s"]),
+            sim_duration_seconds=float(manifest["end_s"]),
             export_dir=metric_output,
             name="",
             graph_file=_resolve_path(manifest["graph"], manifest_file.parent),

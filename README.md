@@ -108,43 +108,39 @@ Internamente, Stage 1 está dividido en dos módulos:
 
 ## Etapa 2: generación offline de artefactos
 
-La Etapa 2 se ejecuta con una configuración independiente de los archivos
-base:
-[`code/generate_offline_artifacts/config/offline_artifacts.json`](code/generate_offline_artifacts/config/offline_artifacts.json).
-Esta configuración define una lista de experimentos. Cada experimento puede
-definir sus propios parámetros de simulación, incidente, detectores y subgrafo.
-La red y las rutas corresponden a los archivos base generados para el escenario
-configurado.
+La Etapa 2 recibe únicamente el nombre del experimento y lee todos los valores
+desde `EXPERIMENT_DIR/<nombre>/manifest.json`. La red se resuelve desde
+`NETWORK_DIR/<network>` y las rutas desde
+`EXPERIMENT_DIR/<nombre>/routes/`.
 
 ```bash
-python code/generate_offline_artifacts/main.py \
-  --config code/generate_offline_artifacts/config/offline_artifacts.json
+EXPERIMENT_DIR="$PWD/experiments" \
+NETWORK_DIR="$PWD/source files/networks" \
+python code/generate_offline_artifacts/main.py sample
 ```
 
-Todos los experimentos se almacenan en una carpeta común. Cada experimento
-contiene:
+Los campos adicionales del manifiesto son `incident`, `detectors` y `subgraph`.
+Los valores raíz `begin_s` y `end_s` definen también la ventana temporal de la
+simulación; no se mantiene un bloque `simulation` duplicado. La Etapa 2 genera
+los artefactos generales una sola vez y valida
+que exista el archivo de rutas de cada tasa de penetración:
 
 ```text
 experiments/<experimento>/
-├── manifest.json
-├── <experimento>.sumocfg
+├── routes/
+│   ├── routes.rou.xml
+│   └── penetration_<rate>.rou.xml
 ├── artifacts/
 │   ├── graph.graphml
 │   ├── subgraph.graphml
 │   └── detectors.add.xml
 ```
 
-La carpeta común se configura mediante `output_directory`. La Etapa 2 crea
-únicamente los artefactos necesarios para las etapas siguientes. Las salidas de
-simulación, métricas y resultados comparativos se crearán en sus respectivas
-etapas. No se genera un manifiesto global: cada experimento tiene su propio
-`manifest.json`. La etapa reutiliza la demanda concreta del escenario para
-ponderar el grafo dual y conserva los parámetros del incidente en el manifiesto.
+`graph.graphml`, `subgraph.graphml` y `detectors.add.xml` son generales al
+experimento. Esta etapa no genera archivos `.sumocfg` ni un manifiesto de salida.
 
-El `.sumocfg` referencia el `.net.xml` y el `.rou.xml` resueltos para el
-experimento, además de los detectores E2 generados. Los parámetros del incidente
-se mantienen en el manifiesto para que la Etapa 3 los aplique mediante TraCI y
-`IncidentManager`.
+Los parámetros del incidente se mantienen en el manifiesto para que la Etapa 3
+los aplique mediante TraCI y `IncidentManager`.
 
 El incidente no se genera como un archivo adicional de SUMO. Durante la
 simulación se crea y controla dinámicamente mediante
@@ -201,8 +197,8 @@ python3 -m simulation.simulator \
   --strategy m0
 ```
 
-La ejecución lee del manifiesto el `.sumocfg`, la configuración del incidente
-y los directorios del experimento. Las salidas crudas se guardan en
+La ejecución lee del manifiesto la configuración del incidente y los directorios
+del experimento. Las salidas crudas se guardan en
 `output/<estrategia>/`. El cálculo de métricas pertenece a una etapa posterior
 y no se ejecuta durante esta etapa.
 

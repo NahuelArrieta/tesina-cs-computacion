@@ -1,9 +1,10 @@
-"""Generate all offline artifacts required by the simulation stage."""
+"""Generate Stage 2 artifacts for one experiment."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -18,7 +19,6 @@ from generate_offline_artifacts.build_dual_graph import (
     parse_routes_xml,
 )
 from generate_offline_artifacts.generate_detectors import generate_e2_detectors
-from generate_offline_artifacts.sumo_config import write_sumo_config
 from utils.dual_graph_handler import (
     assign_turning_probabilities,
     build_dual_graph,
@@ -36,121 +36,110 @@ def _build_graph(network_file: Path, routes_file: Path) -> nx.DiGraph:
     return graph
 
 
-def _load_base_manifest(manifest_file: Path) -> dict[str, dict[str, str]]:
-    entries = json.loads(manifest_file.read_text(encoding="utf-8"))
-    if not isinstance(entries, list):
-        raise ValueError(f"Base manifest must contain a list: {manifest_file}")
-    scenarios = {}
-    for entry in entries:
-        scenario = str(entry.get("scenario", ""))
-        route = entry.get("routes")
-        network = entry.get("network")
-        if not scenario or not route or not network:
-            raise ValueError(
-                f"Base manifest entry requires scenario, routes and network: {entry}"
-            )
-        scenarios[scenario] = {
-            "routes": str(route),
-            "network": str(network),
-        }
-    return scenarios
-
-
-def generate_artifacts(config_file: Path) -> list[dict[str, Any]]:
-    """Generate Stage 2 artifacts for every configured experiment."""
-    config_file = config_file.resolve()
-    config = json.loads(config_file.read_text(encoding="utf-8"))
-    base_manifest_file = (config_file.parent / config["base_manifest"]).resolve()
-    scenarios = _load_base_manifest(base_manifest_file)
-    output_root = (config_file.parent / config["output_directory"]).resolve()
-    results: list[dict[str, Any]] = []
-
-    for experiment in config["experiments"]:
-        experiment_name = str(experiment["name"])
-        experiment_output = output_root / experiment_name
-        experiment_output.mkdir(parents=True, exist_ok=True)
-        artifacts_output = experiment_output / "artifacts"
-        artifacts_output.mkdir(parents=True, exist_ok=True)
-        scenario = str(experiment["scenario"])
-        scenario_input = scenarios.get(scenario)
-        if scenario_input is None:
-            raise KeyError(f"Scenario not found in base manifest: {scenario}")
-        routes_file = Path(scenario_input["routes"]).resolve()
-        network_file = Path(scenario_input["network"]).resolve()
-        vtypes_file = routes_file.parent / "vtypes.add.xml"
-        if not vtypes_file.is_file():
-            raise FileNotFoundError(f"Vehicle types file not found: {vtypes_file}")
-
-        graph = _build_graph(network_file, routes_file)
-        graph_file = artifacts_output / "graph.graphml"
-        export_dual_graph(graph, str(graph_file))
-
-        detectors = experiment["detectors"]
-        detectors_file = artifacts_output / "detectors.add.xml"
-        generate_e2_detectors(
-            str(network_file),
-            str(detectors_file),
-            detector_freq=int(detectors["frequency_s"]),
-            end_offset=float(detectors["end_offset_m"]),
-            start_pos=float(detectors["start_pos_m"]),
-            output_xml_target="e2_output.xml",
+def _load_experiment(manifest_file: Path, experiment_name: str) -> dict[str, Any]:
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+    if manifest.get("experiment") != experiment_name:
+        raise ValueError(
+            f"Manifest experiment '{manifest.get('experiment')}' "
+            f"does not match '{experiment_name}'"
         )
-        incident = experiment["incident"]
-        subgraph_config = experiment["subgraph"]
-        subgraph = extract_upstream_subgraph(
-            graph,
-            incident_edge=str(incident["edge"]),
-            min_prob_threshold=float(subgraph_config["min_probability"]),
-            max_seconds_travel=float(subgraph_config["max_travel_time_s"]),
-            intersection_delay=float(subgraph_config["intersection_delay_s"]),
-        )
-        subgraph_file = artifacts_output / "subgraph.graphml"
-        export_dual_graph(subgraph, str(subgraph_file))
+    required = ("network", "incident", "detectors", "subgraph")
+    missing = [key for key in required if key not in manifest]
+    if missing:
+        raise ValueError(f"Manifest is missing Stage 2 fields: {', '.join(missing)}")
+    return manifest
 
-        sumo_config_file = experiment_output / f"{experiment_name}.sumocfg"
-        write_sumo_config(
-            sumo_config_file,
-            network_file,
-            routes_file,
-            detectors_file,
-            vtypes_file,
-            experiment["simulation"],
-        )
-        experiment_result = {
-            "experiment": experiment_name,
-            "scenario": scenario,
-            "experiment_directory": str(experiment_output),
-            "artifacts_directory": str(artifacts_output),
-            "output_directory": str(experiment_output / "output"),
-            "simulation": experiment["simulation"],
-            "routes": str(routes_file),
-            "graph": str(graph_file),
-            "detectors": str(detectors_file),
-            "sumocfg": str(sumo_config_file),
-            "incident": incident,
-            "subgraph": str(subgraph_file),
-            "graph_nodes": graph.number_of_nodes(),
-            "graph_edges": graph.number_of_edges(),
-            "subgraph_nodes": subgraph.number_of_nodes(),
-            "subgraph_edges": subgraph.number_of_edges(),
-        }
-        (experiment_output / "manifest.json").write_text(
-            json.dumps(experiment_result, indent=2) + "\n", encoding="utf-8"
-        )
-        results.append(experiment_result)
 
-    output_root.mkdir(parents=True, exist_ok=True)
-    return results
+def generate_artifacts(
+    manifest_file: Path,
+    network_directory: Path,
+    experiment_name: str,
+) -> dict[str, Any]:
+    """Generate shared artifacts and validate every penetration file."""
+    manifest_file = manifest_file.resolve()
+    experiment_directory = manifest_file.parent
+    manifest = _load_experiment(manifest_file, experiment_name)
+
+    network_name = str(manifest["network"])
+    network_file = (network_directory / network_name).resolve()
+    if not network_file.is_file():
+        raise FileNotFoundError(f"Network file not found: {network_file}")
+
+    routes_directory = experiment_directory / "routes"
+    base_routes_file = routes_directory / "routes.rou.xml"
+    if not base_routes_file.is_file():
+        raise FileNotFoundError(f"Shared routes file not found: {base_routes_file}")
+
+    artifacts_directory = experiment_directory / "artifacts"
+    artifacts_directory.mkdir(parents=True, exist_ok=True)
+    graph = _build_graph(network_file, base_routes_file)
+    graph_file = artifacts_directory / "graph.graphml"
+    export_dual_graph(graph, str(graph_file))
+
+    detectors = manifest["detectors"]
+    detectors_file = artifacts_directory / "detectors.add.xml"
+    generate_e2_detectors(
+        str(network_file),
+        str(detectors_file),
+        detector_freq=int(detectors["frequency_s"]),
+        end_offset=float(detectors["end_offset_m"]),
+        start_pos=float(detectors["start_pos_m"]),
+        output_xml_target="e2_output.xml",
+    )
+
+    incident = manifest["incident"]
+    subgraph_config = manifest["subgraph"]
+    subgraph = extract_upstream_subgraph(
+        graph,
+        incident_edge=str(incident["edge"]),
+        min_prob_threshold=float(subgraph_config["min_probability"]),
+        max_seconds_travel=float(subgraph_config["max_travel_time_s"]),
+        intersection_delay=float(subgraph_config["intersection_delay_s"]),
+    )
+    subgraph_file = artifacts_directory / "subgraph.graphml"
+    export_dual_graph(subgraph, str(subgraph_file))
+
+    result = {
+        "experiment": experiment_name,
+        "experiment_directory": str(experiment_directory),
+        "artifacts_directory": str(artifacts_directory),
+        "graph": str(graph_file),
+        "subgraph": str(subgraph_file),
+        "detectors": str(detectors_file),
+        "incident": incident,
+        "graph_nodes": graph.number_of_nodes(),
+        "graph_edges": graph.number_of_edges(),
+        "subgraph_nodes": subgraph.number_of_nodes(),
+        "subgraph_edges": subgraph.number_of_edges(),
+    }
+    return result
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate offline artifacts for SUMO experiments"
+        description="Generate Stage 2 artifacts for one experiment"
     )
-    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("experiment", help="Experiment name")
     args = parser.parse_args()
-    results = generate_artifacts(args.config)
-    print(f"Generated offline artifacts for {len(results)} scenarios")
+
+    experiment_directory = Path(
+        os.environ.get(
+            "EXPERIMENT_DIR",
+            str(Path(__file__).resolve().parents[2] / "experiments"),
+        )
+    ).expanduser().resolve()
+    network_directory = Path(
+        os.environ.get(
+            "NETWORK_DIR",
+            str(Path(__file__).resolve().parents[2] / "source files" / "networks"),
+        )
+    ).expanduser().resolve()
+    manifest_file = experiment_directory / args.experiment / "manifest.json"
+    if not manifest_file.is_file():
+        raise FileNotFoundError(f"Experiment manifest not found: {manifest_file}")
+
+    result = generate_artifacts(manifest_file, network_directory, args.experiment)
+    print(f"Generated Stage 2 artifacts for {result['experiment']}")
 
 
 if __name__ == "__main__":
