@@ -220,6 +220,15 @@ La salida queda ordenada como
 La estrategia `m0` es la línea base sin CAV y se ejecuta una única vez en
 `output/p0/m0/`. Las estrategias `m1`, `m2` y `m3` se ejecutan únicamente para
 penetraciones mayores que cero. Por eso `--penetration 0` no está permitido.
+La ejecución es secuencial por defecto. Para ejecutar simulaciones en procesos
+independientes se puede indicar un límite de workers:
+
+```bash
+PYTHONPATH=code python -m simulation.main sample --workers 4
+```
+
+Cada proceso tiene su propia conexión TraCI y su propio proceso SUMO. No se
+debe combinar `--workers` mayor que uno con `--gui-overlay`.
 
 La ejecución lee del manifiesto la configuración del incidente y los directorios
 del experimento. Las salidas crudas se guardan por penetración y estrategia.

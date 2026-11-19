@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import json
+import multiprocessing
 import os
 from pathlib import Path
 
@@ -11,6 +13,19 @@ from simulation.simulator import run_from_manifest
 
 
 STRATEGIES = ("m0", "m1", "m2", "m3")
+
+
+def _run_simulation_job(
+    job: tuple[Path, str, float, int, str | None],
+) -> Path:
+    manifest_file, strategy, penetration, seed, visualization_mode = job
+    return run_from_manifest(
+        manifest_file,
+        strategy,
+        penetration,
+        seed,
+        visualization_mode=visualization_mode,
+    )
 
 
 def main() -> None:
@@ -25,6 +40,12 @@ def main() -> None:
         help="CAV penetration rate between 0 and 1",
     )
     parser.add_argument("--seed", type=int, help="Simulation seed")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Number of simulation processes (default: 1)",
+    )
     visualization_group = parser.add_mutually_exclusive_group()
     visualization_group.add_argument(
         "--gui-overlay",
@@ -34,6 +55,10 @@ def main() -> None:
         help="Color the subgraph streets as overlays in SUMO-GUI.",
     )
     args = parser.parse_args()
+    if args.workers < 1:
+        raise ValueError("workers must be at least 1")
+    if args.workers > 1 and args.visualization_mode == "gui-overlay":
+        raise ValueError("parallel execution is not supported with --gui-overlay")
 
     experiment_directory = Path(
         os.environ.get(
@@ -88,19 +113,22 @@ def main() -> None:
             runs.insert(0, (0.0, "m0"))
 
     seeds = [args.seed] if args.seed is not None else configured_seeds
-    for penetration, strategy in runs:
-        percentage = int(round(penetration * 100))
-        for seed in seeds:
-            run_from_manifest(
-                manifest_file,
-                strategy,
-                penetration,
-                seed,
-                visualization_mode=args.visualization_mode,
-            )
+    jobs = [
+        (manifest_file, strategy, penetration, seed, args.visualization_mode)
+        for penetration, strategy in runs
+        for seed in seeds
+    ]
+    context = multiprocessing.get_context("spawn")
+    with ProcessPoolExecutor(
+        max_workers=args.workers,
+        mp_context=context,
+    ) as executor:
+        for job, output_directory in zip(jobs, executor.map(_run_simulation_job, jobs)):
+            _, strategy, penetration, seed, _ = job
+            percentage = int(round(penetration * 100))
             print(
                 f"Completed penetration p{percentage}, strategy {strategy}, "
-                f"seed {seed}"
+                f"seed {seed}: {output_directory}"
             )
 
 
