@@ -253,12 +253,10 @@ python code/metrics/main.py \
 Los resultados se guardan por estrategia en:
 
 ```text
-<experimento>/metrics/
-├── m0/
-│   ├── metrics.json
-│   ├── metrics_stability_by_step.csv
-│   └── metrics_congestion_<zona>_by_interval.csv
-└── ...
+<experimento>/metrics/p<penetración>/m<estrategia>/
+├── metrics.json
+├── metrics_stability_by_step.csv
+└── metrics_congestion_<zona>_by_interval.csv
 ```
 
 Si una estrategia todavía no tiene sus salidas crudas, la etapa falla

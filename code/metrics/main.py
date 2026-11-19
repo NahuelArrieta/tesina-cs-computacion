@@ -1,9 +1,10 @@
-"""Extract and process metrics from the raw outputs of an experiment."""
+"""Extract and aggregate seed metrics for Stage 4."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -11,89 +12,145 @@ from typing import Any
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from metrics.metrics_handler import process_metrics
+from metrics.aggregate import aggregate_metrics, aggregate_rows
+from metrics.metrics_handler import collect_metrics
+from utils.dual_graph_handler import load_dual_graph
 
 
-def _read_manifest(manifest_file: Path) -> dict[str, Any]:
+def _load_manifest(experiment_directory: Path) -> dict[str, Any]:
+    manifest_file = experiment_directory / "manifest.json"
     manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
     if not isinstance(manifest, dict):
         raise ValueError(f"Experiment manifest must be an object: {manifest_file}")
     return manifest
 
 
-def _resolve_path(value: str | Path, base_directory: Path) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else (base_directory / path).resolve()
+def _percentage(penetration: float) -> int:
+    return int(round(penetration * 100))
 
 
-def extract_metrics(config_file: Path) -> list[dict[str, Any]]:
-    """Process every configured strategy from one experiment manifest."""
-    config_file = config_file.resolve()
-    config = json.loads(config_file.read_text(encoding="utf-8"))
-    manifest_file = _resolve_path(config["manifest"], config_file.parent)
-    manifest = _read_manifest(manifest_file)
+def extract_metrics(experiment_name: str) -> list[dict[str, Any]]:
+    experiment_directory = Path(
+        os.environ.get(
+            "EXPERIMENT_DIR",
+            str(Path(__file__).resolve().parents[2] / "experiments"),
+        )
+    ).expanduser().resolve() / experiment_name
+    manifest = _load_manifest(experiment_directory)
 
-    experiment_directory = _resolve_path(
-        manifest.get("experiment_directory", manifest_file.parent),
-        manifest_file.parent,
-    )
-    output_root = _resolve_path(
-        manifest.get("output_directory", experiment_directory / "output"),
-        manifest_file.parent,
-    )
-    metrics_root = _resolve_path(
-        config.get("metrics_directory", experiment_directory / "metrics"),
-        config_file.parent,
-    )
-    strategies = config.get("strategies", ["m0", "m1", "m2", "m3"])
-    if not isinstance(strategies, list) or not strategies:
-        raise ValueError("strategies must be a non-empty list")
+    network_directory = Path(
+        os.environ.get(
+            "NETWORK_DIR",
+            str(experiment_directory.parents[1] / "source files" / "networks"),
+        )
+    ).expanduser().resolve()
+    network_file = network_directory / str(manifest["network"])
+    graph_file = experiment_directory / "artifacts" / "graph.graphml"
+    subgraph_file = experiment_directory / "artifacts" / "subgraph.graphml"
+    for required_file in (network_file, graph_file, subgraph_file):
+        if not required_file.is_file():
+            raise FileNotFoundError(f"Required artifact not found: {required_file}")
 
+    output_root = experiment_directory / "output"
+    metrics_root = experiment_directory / "metrics"
     incident = manifest["incident"]
+    penetrations = [0.0] + [
+        float(penetration)
+        for penetration in manifest["cav_penetrations"]
+        if float(penetration) > 0.0
+    ]
+    seeds = [int(seed) for seed in manifest["simulation_seeds"]]
+    if not seeds:
+        raise ValueError("simulation_seeds must contain at least one seed")
+
     results: list[dict[str, Any]] = []
-    for strategy in strategies:
-        strategy_name = str(strategy)
-        raw_output = output_root / strategy_name
-        metric_output = metrics_root / strategy_name
-        metrics, paths = process_metrics(
-            incident_edge=str(incident["edge"]),
-            output_dir=raw_output,
-            incident_start_s=float(incident["begin_s"]),
-            incident_end_s=float(incident["end_s"]),
-            sim_duration_seconds=float(manifest["end_s"]),
-            export_dir=metric_output,
-            name="",
-            graph_file=_resolve_path(manifest["graph"], manifest_file.parent),
-            subgraph_file=_resolve_path(manifest["subgraph"], manifest_file.parent),
-            exclude_ids=config.get("exclude_ids", []),
-            congested_queue_threshold_m=float(
-                config.get("congested_queue_threshold_m", 20.0)
-            ),
-            baseline_speed_ratio=float(config.get("baseline_speed_ratio", 0.90)),
-        )
-        results.append(
-            {
-                "strategy": strategy_name,
-                "metrics": str(paths["json"]),
-                "timeseries": {
-                    key: str(path)
-                    for key, path in paths.items()
-                    if key != "json"
-                },
-                "values": metrics,
-            }
-        )
+    graph = load_dual_graph(str(graph_file))
+    subgraph = load_dual_graph(str(subgraph_file))
+
+    for penetration in penetrations:
+        percentage = _percentage(penetration)
+        strategies = ["m0"] if penetration == 0.0 else ["m1", "m2", "m3"]
+        for strategy in strategies:
+            seed_metrics: list[dict[str, Any]] = []
+            stability_seed_rows: list[list[dict[str, Any]]] = []
+            congestion_seed_rows: dict[str, list[list[dict[str, Any]]]] = {}
+            aggregate_directory = metrics_root / f"p{percentage}" / strategy
+            aggregate_directory.mkdir(parents=True, exist_ok=True)
+
+            for seed in seeds:
+                raw_output = (
+                    output_root
+                    / f"p{percentage}"
+                    / strategy
+                    / f"seed_{seed}"
+                )
+                if not raw_output.is_dir():
+                    raise FileNotFoundError(
+                        f"Simulation output not found: {raw_output}"
+                    )
+                metrics = collect_metrics(
+                    incident_edge=str(incident["edge"]),
+                    output_dir=raw_output,
+                    incident_start_s=float(incident["begin_s"]),
+                    incident_end_s=float(incident["end_s"]),
+                    sim_duration_seconds=float(manifest["end_s"]),
+                    graph=graph,
+                    subgraph=subgraph,
+                    exclude_ids=["veh_bloqueo"],
+                )
+                seed_metrics.append(metrics)
+                stability_seed_rows.append(metrics["stability_timeseries"])
+                for zone, rows in metrics["congestion_timeseries"].items():
+                    congestion_seed_rows.setdefault(str(zone), []).append(rows)
+
+            aggregated = aggregate_metrics(seed_metrics)
+            metrics_file = aggregate_directory / "metrics.json"
+            metrics_file.write_text(
+                json.dumps(aggregated, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+
+            stability_output = aggregate_directory / "metrics_stability_by_step.csv"
+            aggregate_rows(
+                stability_seed_rows,
+                stability_output,
+                "time",
+            )
+            timeseries = {"stability": str(stability_output)}
+
+            for zone, seed_rows in congestion_seed_rows.items():
+                output_file = (
+                    aggregate_directory
+                    / f"metrics_congestion_{zone}_by_interval.csv"
+                )
+                aggregate_rows(
+                    seed_rows,
+                    output_file,
+                    "interval_midpoint_s",
+                )
+                timeseries[f"congestion:{zone}"] = str(output_file)
+
+            results.append(
+                {
+                    "penetration": penetration,
+                    "strategy": strategy,
+                    "metrics": str(metrics_file),
+                    "timeseries": timeseries,
+                }
+            )
     return results
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Extract metrics from raw SUMO experiment outputs"
+        description="Extract and aggregate Stage 4 metrics"
     )
-    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("experiment", help="Experiment name")
     args = parser.parse_args()
-    results = extract_metrics(args.config)
-    print(f"Extracted metrics for {len(results)} strategies")
+    results = extract_metrics(args.experiment)
+    print(
+        f"Aggregated metrics for {len(results)} penetration/strategy combinations"
+    )
 
 
 if __name__ == "__main__":
