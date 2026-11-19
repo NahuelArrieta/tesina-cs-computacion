@@ -190,7 +190,7 @@ ejecuciones batch o sin entorno gráfico.
 La Etapa 3 recibe únicamente el nombre del experimento. Construye una
 configuración SUMO temporal a partir del manifiesto, la red, las rutas y los
 detectores; no genera ningún archivo `.sumocfg` persistente. La penetración
-utilizada se define con `simulation_penetration` en el manifiesto.
+utilizada se selecciona desde `cav_penetrations` en el manifiesto.
 La resolución temporal de SUMO es común a todos los experimentos y está
 definida por `DEFAULT_STEP_LENGTH_S = 0.1` en
 [`code/simulation/simulator.py`](code/simulation/simulator.py).
@@ -199,14 +199,27 @@ definida por `DEFAULT_STEP_LENGTH_S = 0.1` en
 PYTHONPATH=code python -m simulation.main sample
 ```
 
-Sin `--strategy` se ejecutan `m0`, `m1`, `m2` y `m3`. Para ejecutar una sola:
+Sin flags se ejecutan todas las combinaciones de penetración y estrategia.
+Para ejecutar una sola estrategia en todas las penetraciones:
 
 ```bash
 PYTHONPATH=code python -m simulation.main sample --strategy m0
 ```
 
+Para ejecutar una única penetración:
+
+```bash
+PYTHONPATH=code python -m simulation.main sample --penetration 0.25
+```
+
+La salida queda ordenada como `output/p{penetración}/m{estrategia}/`, por
+ejemplo `output/p25/m0/`.
+La estrategia `m0` es la línea base sin CAV y se ejecuta una única vez en
+`output/p0/m0/`. Las estrategias `m1`, `m2` y `m3` se ejecutan únicamente para
+penetraciones mayores que cero. Por eso `--penetration 0` no está permitido.
+
 La ejecución lee del manifiesto la configuración del incidente y los directorios
-del experimento. Las salidas crudas se guardan en `output/<estrategia>/`.
+del experimento. Las salidas crudas se guardan por penetración y estrategia.
 El cálculo de métricas pertenece a una etapa posterior y no se ejecuta durante
 esta etapa.
 
@@ -218,7 +231,7 @@ encuentran en [`code/metrics/`](code/metrics/), con la configuración en
 [`code/metrics/config/metrics.json`](code/metrics/config/metrics.json).
 El grafo se toma desde `artifacts/graph.graphml`, mientras que los archivos
 `tripinfo.xml`, `fcd_output.xml` y `e2_output.xml` se leen desde
-`output/<estrategia>/`.
+`output/p{penetración}/m{estrategia}/`.
 
 ```bash
 python code/metrics/main.py \

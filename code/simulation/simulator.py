@@ -94,17 +94,17 @@ def run_simulation(
 def run_from_manifest(
     manifest_file: str | Path,
     strategy: str,
+    penetration: float,
     visualization_mode: str | None = None,
 ) -> Path:
-    """Run one strategy using an experiment manifest and save raw outputs."""
+    """Run one strategy and penetration using an experiment manifest."""
     manifest_path = Path(manifest_file).resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     experiment_directory = manifest_path.parent
     output_directory = Path(
         manifest.get("output_directory", experiment_directory / "output")
-    ).resolve() / strategy
+    ).resolve() / f"p{int(round(penetration * 100))}" / strategy
     output_directory.mkdir(parents=True, exist_ok=True)
-    incident = manifest["incident"]
     incident = manifest["incident"]
     duration = float(manifest["end_s"])
     visualization_interval_s = float(
@@ -157,7 +157,6 @@ def run_from_manifest(
             )
         ).expanduser().resolve() / str(manifest["network"])
         routes_directory = experiment_directory / "routes"
-        penetration = float(manifest["simulation_penetration"])
         percentage = int(round(penetration * 100))
         route_files = [
             routes_directory / "routes.rou.xml",

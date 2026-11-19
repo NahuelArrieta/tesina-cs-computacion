@@ -7,13 +7,11 @@
   "period_s": 1.5,
   "routes_seed": 42,
   "cav_penetrations": [
-    0.0,
     0.25,
     0.5,
     0.75,
     1.0
   ],
-  "simulation_penetration": 0.25,
   "incident": {
     "edge": "A2B2",
     "blocked_lane": 0,
