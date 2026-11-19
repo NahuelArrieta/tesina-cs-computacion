@@ -10,6 +10,7 @@ from .incident_manager import IncidentManager
 ## Output files
 TRIPINFO_PATH = "tripinfo.xml"
 FCD_OUTPUT_PATH = "fcd_output.xml"
+DEFAULT_STEP_LENGTH_S = 0.1
 
 
 def run_simulation(
@@ -98,23 +99,20 @@ def run_from_manifest(
     """Run one strategy using an experiment manifest and save raw outputs."""
     manifest_path = Path(manifest_file).resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    experiment_directory = Path(
-        manifest.get("experiment_directory", manifest_path.parent)
-    ).resolve()
+    experiment_directory = manifest_path.parent
     output_directory = Path(
         manifest.get("output_directory", experiment_directory / "output")
     ).resolve() / strategy
     output_directory.mkdir(parents=True, exist_ok=True)
-
     incident = manifest["incident"]
-    simulation = manifest.get("simulation", {})
-    duration = float(simulation.get("end_s", 3600.0))
+    incident = manifest["incident"]
+    duration = float(manifest["end_s"])
     visualization_interval_s = float(
-        simulation.get("visualization_interval_s", 10.0)
+        manifest.get("visualization_interval_s", 10.0)
     )
     if visualization_interval_s <= 0.0:
         raise ValueError("simulation.visualization_interval_s must be positive")
-    configured_visualization = simulation.get("visualization", False)
+    configured_visualization = manifest.get("visualization", False)
     if visualization_mode is None:
         visualization_mode = (
             "gui-overlay"
@@ -134,7 +132,11 @@ def run_from_manifest(
         raise ValueError(
             "--gui-overlay requires SUMO_BINARY=sumo-gui"
         )
-    detector_tree = ET.parse(Path(manifest["detectors"]).resolve())
+    detectors_file = experiment_directory / "artifacts" / "detectors.add.xml"
+    subgraph_file = experiment_directory / "artifacts" / "subgraph.graphml"
+    if not detectors_file.is_file():
+        raise FileNotFoundError(f"Detector file not found: {detectors_file}")
+    detector_tree = ET.parse(detectors_file)
     detector_output = output_directory / "e2_output.xml"
     for detector in detector_tree.getroot().iter("laneAreaDetector"):
         detector.set("file", str(detector_output))
@@ -148,21 +150,48 @@ def run_from_manifest(
             temporary_detector, encoding="utf-8", xml_declaration=True
         )
         temporary_detector.close()
-        sumo_config_tree = ET.parse(Path(manifest["sumocfg"]).resolve())
-        additional_files = sumo_config_tree.find("./input/additional-files")
-        if additional_files is None:
-            raise ValueError("SUMO configuration is missing input/additional-files")
-        additional_paths = [
-            path
-            for path in additional_files.get("value", "").split(",")
-            if Path(path).resolve() != Path(manifest["detectors"]).resolve()
+        network_file = Path(
+            os.environ.get(
+                "NETWORK_DIR",
+                str(manifest_path.parents[2] / "source files" / "networks"),
+            )
+        ).expanduser().resolve() / str(manifest["network"])
+        routes_directory = experiment_directory / "routes"
+        penetration = float(manifest["simulation_penetration"])
+        percentage = int(round(penetration * 100))
+        route_files = [
+            routes_directory / "routes.rou.xml",
+            routes_directory / f"penetration_{percentage}.rou.xml",
         ]
-        additional_paths.insert(0, temporary_detector.name)
-        additional_files.set("value", ",".join(additional_paths))
+        for route_file in [network_file, *route_files]:
+            if not route_file.is_file():
+                raise FileNotFoundError(f"Simulation input file not found: {route_file}")
+        sumo_config_tree = ET.Element("configuration")
+        input_node = ET.SubElement(sumo_config_tree, "input")
+        ET.SubElement(input_node, "net-file", {"value": str(network_file)})
+        ET.SubElement(
+            input_node,
+            "route-files",
+            {"value": ",".join(str(route_file) for route_file in route_files)},
+        )
+        ET.SubElement(
+            input_node,
+            "additional-files",
+            {"value": temporary_detector.name},
+        )
+        time_node = ET.SubElement(sumo_config_tree, "time")
+        ET.SubElement(time_node, "begin", {"value": str(manifest["begin_s"])})
+        ET.SubElement(time_node, "end", {"value": str(manifest["end_s"])})
+        ET.SubElement(
+            time_node,
+            "step-length",
+            {"value": str(DEFAULT_STEP_LENGTH_S)},
+        )
+        ET.indent(sumo_config_tree, space="    ")
         temporary_config = tempfile.NamedTemporaryFile(
             mode="wb", suffix=".sumocfg", dir=output_directory, delete=False
         )
-        sumo_config_tree.write(
+        ET.ElementTree(sumo_config_tree).write(
             temporary_config, encoding="utf-8", xml_declaration=True
         )
         temporary_config.close()
@@ -175,7 +204,7 @@ def run_from_manifest(
             sumo_file=temporary_config.name,
             output_dir=output_directory,
             subgraph_file=(
-                manifest["subgraph"]
+                str(subgraph_file)
                 if Path(os.environ.get("SUMO_BINARY", "sumo")).name == "sumo-gui"
                 else None
             ),
@@ -190,25 +219,3 @@ def run_from_manifest(
             Path(temporary_config.name).unlink(missing_ok=True)
 
     return output_directory
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Run one experiment strategy")
-    parser.add_argument("--manifest", type=Path, required=True)
-    parser.add_argument("--strategy", required=True, choices=("m0", "m1", "m2", "m3"))
-    visualization_group = parser.add_mutually_exclusive_group()
-    visualization_group.add_argument(
-        "--gui-overlay",
-        action="store_const",
-        const="gui-overlay",
-        dest="visualization_mode",
-        help="Color the subgraph streets as overlays in SUMO-GUI.",
-    )
-    args = parser.parse_args()
-    run_from_manifest(
-        args.manifest,
-        args.strategy,
-        visualization_mode=args.visualization_mode,
-    )

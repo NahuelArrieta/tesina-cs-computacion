@@ -13,6 +13,7 @@
     0.75,
     1.0
   ],
+  "simulation_penetration": 0.25,
   "incident": {
     "edge": "A2B2",
     "blocked_lane": 0,

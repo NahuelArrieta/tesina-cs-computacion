@@ -171,13 +171,13 @@ muestran únicamente el incidente o también el estado de ocupación:
 
 ```bash
 # Solo marcar el incidente
-SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.simulator \
-  --manifest experiments/incident_a2b2/manifest.json \
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.main \
+  incident_a2b2 \
   --strategy m0
 
 # Marcar el incidente y mostrar la ocupación
-SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.simulator \
-  --manifest experiments/incident_a2b2/manifest.json \
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.main \
+  incident_a2b2 \
   --strategy m0 \
   --gui-overlay
 ```
@@ -187,20 +187,28 @@ ejecuciones batch o sin entorno gráfico.
 
 ## Etapa 3: ejecución de simulaciones
 
-La simulación recibe el manifiesto de un experimento generado por la Etapa 2
-y una estrategia (`m0` a `m3`):
+La Etapa 3 recibe únicamente el nombre del experimento. Construye una
+configuración SUMO temporal a partir del manifiesto, la red, las rutas y los
+detectores; no genera ningún archivo `.sumocfg` persistente. La penetración
+utilizada se define con `simulation_penetration` en el manifiesto.
+La resolución temporal de SUMO es común a todos los experimentos y está
+definida por `DEFAULT_STEP_LENGTH_S = 0.1` en
+[`code/simulation/simulator.py`](code/simulation/simulator.py).
 
 ```bash
-cd code
-python3 -m simulation.simulator \
-  --manifest ../experiments/incident_a2b2/manifest.json \
-  --strategy m0
+PYTHONPATH=code python -m simulation.main sample
+```
+
+Sin `--strategy` se ejecutan `m0`, `m1`, `m2` y `m3`. Para ejecutar una sola:
+
+```bash
+PYTHONPATH=code python -m simulation.main sample --strategy m0
 ```
 
 La ejecución lee del manifiesto la configuración del incidente y los directorios
-del experimento. Las salidas crudas se guardan en
-`output/<estrategia>/`. El cálculo de métricas pertenece a una etapa posterior
-y no se ejecuta durante esta etapa.
+del experimento. Las salidas crudas se guardan en `output/<estrategia>/`.
+El cálculo de métricas pertenece a una etapa posterior y no se ejecuta durante
+esta etapa.
 
 ## Etapa 4: extracción y procesamiento de métricas
 
