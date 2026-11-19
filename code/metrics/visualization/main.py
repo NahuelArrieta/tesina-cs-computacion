@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -13,82 +14,39 @@ if __package__ in (None, ""):
 from metrics.visualization.plots import visualize_metrics
 
 
-def _resolve_path(value: str | Path, base_directory: Path) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else (base_directory / path).resolve()
 
-
-def _incident_window(
-    config: dict[str, object], metrics_directory: Path
-) -> tuple[float, float] | None:
-    start = config.get("incident_start_s")
-    end = config.get("incident_end_s")
-    manifest_file = metrics_directory.parent / "manifest.json"
-    if (start is None) != (end is None):
-        raise ValueError(
-            "incident_start_s and incident_end_s must be provided together"
+def export_visualizations(experiment_name: str) -> list[Path]:
+    """Generate Stage 5 visualizations for one experiment."""
+    experiment_directory = Path(
+        os.environ.get(
+            "EXPERIMENT_DIR",
+            str(Path(__file__).resolve().parents[3] / "experiments"),
         )
-    if start is None and end is None:
-        if not manifest_file.is_file():
-            return None
-        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
-        incident = manifest.get("incident", {})
-        start = incident.get("begin_s")
-        end = incident.get("end_s")
-    if start is None or end is None:
-        return None
-    start_s, end_s = float(start), float(end)
-    if start_s < 0 or end_s <= start_s:
-        raise ValueError("incident boundaries must satisfy 0 <= start < end")
-    return start_s, end_s
-
-
-def export_visualizations(config_file: Path) -> list[Path]:
-    """Read a visualization config and export all requested figures."""
-    config_file = config_file.resolve()
-    config = json.loads(config_file.read_text(encoding="utf-8"))
-    if not isinstance(config, dict):
-        raise ValueError(f"Visualization config must be an object: {config_file}")
-
-    metrics_directory = _resolve_path(
-        config["metrics_directory"], config_file.parent
+    ).expanduser().resolve() / experiment_name
+    metrics_directory = experiment_directory / "metrics"
+    output_directory = experiment_directory / "results" / "graphics"
+    manifest_file = experiment_directory / "manifest.json"
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+    incident = manifest["incident"]
+    incident_window = (
+        float(incident["begin_s"]),
+        float(incident["end_s"]),
     )
-    output_directory = _resolve_path(
-        config.get("output_directory", metrics_directory / "visualizations"),
-        config_file.parent,
-    )
-    strategies = config.get("strategies")
-    if strategies is not None and (
-        not isinstance(strategies, list) or not strategies
-    ):
-        raise ValueError("strategies must be a non-empty list when specified")
-    formats = config.get("formats", ["png"])
-    if not isinstance(formats, list) or not formats:
-        raise ValueError("formats must be a non-empty list")
-    plots = config.get("plots", ["summary", "stability", "congestion"])
-    if not isinstance(plots, list) or not plots:
-        raise ValueError("plots must be a non-empty list")
-
     return visualize_metrics(
         metrics_directory=metrics_directory,
         output_directory=output_directory,
-        strategies=None
-        if strategies is None
-        else [str(strategy) for strategy in strategies],
-        formats=[str(file_format).lower().lstrip(".") for file_format in formats],
-        plots=[str(plot) for plot in plots],
-        dpi=int(config.get("dpi", 150)),
-        incident_window=_incident_window(config, metrics_directory),
+        formats=["svg"],
+        dpi=150,
+        incident_window=incident_window,
+        sim_duration_s=float(manifest["end_s"]),
     )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Export visualizations from processed experiment metrics"
-    )
-    parser.add_argument("--config", type=Path, required=True)
+    parser = argparse.ArgumentParser(description="Export Stage 5 experiment report")
+    parser.add_argument("experiment", help="Experiment name")
     args = parser.parse_args()
-    paths = export_visualizations(args.config)
+    paths = export_visualizations(args.experiment)
     print(f"Exported {len(paths)} visualization files")
 
 

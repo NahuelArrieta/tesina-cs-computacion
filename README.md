@@ -265,35 +265,21 @@ durante la Etapa 3.
 
 ## Etapa 5: visualización y exportación de métricas
 
-La Etapa 5 genera visualizaciones comparables para una o más estrategias (`m0`,
-`m1`, etc.) a partir de los archivos exportados por la Etapa 4. La configuración
-de ejemplo está en
-[`code/metrics/config/visualization.json`](code/metrics/config/visualization.json):
+La Etapa 5 genera visualizaciones SVG comparables para el experimento a partir
+de los resultados agregados por la Etapa 4:
 
 ```bash
-python code/metrics/visualization/main.py \
-  --config code/metrics/config/visualization.json
+PYTHONPATH=code python -m metrics.visualization.main sample
 ```
 
-También se puede ejecutar como módulo desde `code`:
+Los resultados se guardan únicamente en formato SVG:
 
-```bash
-python -m metrics.visualization \
-  --config metrics/config/visualization.json
+```text
+experiments/<experimento>/results/
+├── report.html
+└── graphics/
+    └── <nombre>.svg
 ```
 
-La lista opcional `strategies` define las carpetas que se comparan. Si se omite,
-se detectan automáticamente todas las estrategias que contienen un
-`metrics.json`. Si no se especifica `formats`, se generan imágenes PNG.
-También se pueden solicitar `svg` y `pdf`. `plots` acepta `summary`,
-`stability` y `congestion`. Además de las imágenes individuales, siempre se
-genera un único `report.html` autocontenido con todos los gráficos embebidos.
-Las figuras, el reporte y un manifiesto de exportación se guardan en
-`output_directory`.
-
-When the experiment `manifest.json` is next to the metrics directory, the
-visualization automatically reads `incident.begin_s` and `incident.end_s`.
-Stability and congestion plots then shade the pre-incident, incident, and
-post-incident stages and draw boundary lines. If no manifest is available, the
-boundaries can be supplied explicitly with `incident_start_s` and
-`incident_end_s` in the visualization configuration.
+El reporte HTML referencia los gráficos SVG. No se generan PNG, PDF, CSV ni
+manifiestos de visualización.
