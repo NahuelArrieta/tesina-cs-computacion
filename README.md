@@ -19,8 +19,8 @@ predeterminados del proyecto.
 
 La Etapa 1 recibe únicamente el nombre de un experimento y lee su configuración
 desde `EXPERIMENT_DIR/<nombre>/manifest.json`. Genera una ruta `.rou.xml` por
-cada tasa de penetración CAV configurada y no crea ningún archivo JSON de
-salida.
+cada tasa de penetración CAV configurada, a partir de una única ruta neutral,
+y no crea ningún archivo JSON de salida.
 
 ```bash
 EXPERIMENT_DIR="$PWD/experiments" \
@@ -57,14 +57,25 @@ El manifiesto de ejemplo es:
   reproducible de CAV y distribuciones HDV.
 - `cav_penetrations` puede contener tasas entre `0.0` y `1.0`.
 
-El proceso valida la red y asigna exactamente
+El proceso genera primero `routes.rou.xml`, sin atributos `type` ni definiciones
+vType, con una definición nombrada por cada ruta única. Después genera una
+archivo por penetración que contiene solamente vTypes y vehículos con
+`route="<route_id>"`. Cada penetración asigna exactamente
 `round(n * cav_penetration)` vehículos CAV. Las distribuciones humanas se leen
-directamente del archivo `.add.xml` indicado por `vtypes`.
+directamente del archivo `.add.xml` indicado por `vtypes`. Los archivos de
+penetración no repiten las listas de aristas de las rutas.
+
+Al ejecutar SUMO, ambos archivos se pasan como rutas:
+
+```text
+--route-files routes.rou.xml,penetration_25.rou.xml
+```
 
 La estructura resultante es:
 
 ```text
 experiments/sample/routes/
+├── routes.rou.xml
 ├── penetration_0.rou.xml
 ├── penetration_25.rou.xml
 ├── penetration_50.rou.xml
@@ -87,6 +98,13 @@ python code/tools/generate_vtypes.py \
 El resultado incluye 50 muestras por distribución y guarda reproduciblemente,
 dentro de un comentario XML, la herramienta que lo creó, la seed, el CSV de
 entrada y los porcentajes de tipos solicitados.
+
+Internamente, Stage 1 está dividido en dos módulos:
+
+- [`code/generate_base_files/generate_routes.py`](code/generate_base_files/generate_routes.py)
+  genera la red de rutas compartida y valida las aristas.
+- [`code/generate_base_files/generate_penetrations.py`](code/generate_base_files/generate_penetrations.py)
+  asigna CAV/HDV y genera un archivo por tasa de penetración.
 
 ## Etapa 2: generación offline de artefactos
 

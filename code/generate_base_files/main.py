@@ -11,7 +11,11 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from generate_base_files.generate_demand import generate_demand
+from generate_base_files.generate_routes import (
+    generate_base_routes,
+    validate_routes,
+)
+from generate_base_files.generate_penetrations import assign_vehicle_types
 def generate_routes(
     config: dict[str, object],
     network_directory: Path,
@@ -38,19 +42,27 @@ def generate_routes(
     seed = int(config["routes_seed"])
     if seed < 0:
         raise ValueError("seed must be non-negative")
-    route_files: list[Path] = []
+    base_route_file = output_directory / "routes.rou.xml"
+    vehicle_specs = generate_base_routes(
+        network_file=network_file,
+        output_file=base_route_file,
+        begin=float(config["begin_s"]),
+        end=float(config["end_s"]),
+        period=float(config["period_s"]),
+        seed=seed,
+    )
+    validate_routes(network_file, base_route_file)
+
+    route_files: list[Path] = [base_route_file]
     for penetration in config["cav_penetrations"]:
         percentage = int(round(float(penetration) * 100))
         route_file = output_directory / f"penetration_{percentage}.rou.xml"
-        generate_demand(
-            network_file=network_file,
-            output_file=route_file,
-            begin=float(config["begin_s"]),
-            end=float(config["end_s"]),
-            period=float(config["period_s"]),
+        assign_vehicle_types(
+            route_file=route_file,
+            penetration=float(penetration),
             seed=seed,
-            cav_penetration=float(penetration),
             vtypes_file=vtypes_file,
+            vehicle_specs=vehicle_specs,
         )
         route_files.append(route_file)
     return route_files
@@ -102,7 +114,7 @@ def main() -> None:
         experiment_directory,
         experiment_name,
     )
-    print(f"Generated {len(route_files)} route files")
+    print(f"Generated {len(route_files) - 1} penetration routes")
 
 
 if __name__ == "__main__":
