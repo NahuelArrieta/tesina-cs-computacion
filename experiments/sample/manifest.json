@@ -12,6 +12,7 @@
     0.75,
     1.0
   ],
+  "simulation_seeds": [1, 2, 3],
   "incident": {
     "edge": "A2B2",
     "blocked_lane": 0,

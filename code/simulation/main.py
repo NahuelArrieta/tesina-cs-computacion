@@ -24,6 +24,7 @@ def main() -> None:
         type=float,
         help="CAV penetration rate between 0 and 1",
     )
+    parser.add_argument("--seed", type=int, help="Simulation seed")
     visualization_group = parser.add_mutually_exclusive_group()
     visualization_group.add_argument(
         "--gui-overlay",
@@ -48,6 +49,11 @@ def main() -> None:
     configured_penetrations = [
         float(penetration) for penetration in manifest["cav_penetrations"]
     ]
+    configured_seeds = [int(seed) for seed in manifest["simulation_seeds"]]
+    if not configured_seeds:
+        raise ValueError("simulation_seeds must contain at least one seed")
+    if args.seed is not None and args.seed not in configured_seeds:
+        raise ValueError(f"Seed {args.seed} is not configured in simulation_seeds")
     if args.penetration is not None:
         if not 0.0 < args.penetration <= 1.0:
             raise ValueError("penetration must be greater than 0 and at most 1")
@@ -81,15 +87,21 @@ def main() -> None:
         if args.strategy is None:
             runs.insert(0, (0.0, "m0"))
 
+    seeds = [args.seed] if args.seed is not None else configured_seeds
     for penetration, strategy in runs:
         percentage = int(round(penetration * 100))
-        run_from_manifest(
-            manifest_file,
-            strategy,
-            penetration,
-            visualization_mode=args.visualization_mode,
-        )
-        print(f"Completed penetration p{percentage}, strategy {strategy}")
+        for seed in seeds:
+            run_from_manifest(
+                manifest_file,
+                strategy,
+                penetration,
+                seed,
+                visualization_mode=args.visualization_mode,
+            )
+            print(
+                f"Completed penetration p{percentage}, strategy {strategy}, "
+                f"seed {seed}"
+            )
 
 
 if __name__ == "__main__":

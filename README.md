@@ -212,8 +212,11 @@ Para ejecutar una única penetración:
 PYTHONPATH=code python -m simulation.main sample --penetration 0.25
 ```
 
-La salida queda ordenada como `output/p{penetración}/m{estrategia}/`, por
-ejemplo `output/p25/m0/`.
+El manifiesto define las seeds de simulación en `simulation_seeds`. Sin
+`--seed` se ejecutan todas; con esa flag se ejecuta únicamente la seed indicada.
+La salida queda ordenada como
+`output/p{penetración}/m{estrategia}/seed_{seed}/`, por ejemplo
+`output/p25/m1/seed_1/`.
 La estrategia `m0` es la línea base sin CAV y se ejecuta una única vez en
 `output/p0/m0/`. Las estrategias `m1`, `m2` y `m3` se ejecutan únicamente para
 penetraciones mayores que cero. Por eso `--penetration 0` no está permitido.

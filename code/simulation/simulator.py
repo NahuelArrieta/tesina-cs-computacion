@@ -25,6 +25,7 @@ def run_simulation(
     subgraph_file=None,
     visualization_interval_s=10.0,
     show_occupancy_overlay=False,
+    seed=None,
 ):
     sumo_binary = os.environ.get("SUMO_BINARY", "sumo")
 
@@ -44,6 +45,8 @@ def run_simulation(
     ]
     if additional_file:
         sumo_cmd += ["--additional-files", str(additional_file)]
+    if seed is not None:
+        sumo_cmd += ["--seed", str(seed)]
 
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
@@ -95,6 +98,7 @@ def run_from_manifest(
     manifest_file: str | Path,
     strategy: str,
     penetration: float,
+    seed: int,
     visualization_mode: str | None = None,
 ) -> Path:
     """Run one strategy and penetration using an experiment manifest."""
@@ -103,7 +107,7 @@ def run_from_manifest(
     experiment_directory = manifest_path.parent
     output_directory = Path(
         manifest.get("output_directory", experiment_directory / "output")
-    ).resolve() / f"p{int(round(penetration * 100))}" / strategy
+    ).resolve() / f"p{int(round(penetration * 100))}" / strategy / f"seed_{seed}"
     output_directory.mkdir(parents=True, exist_ok=True)
     incident = manifest["incident"]
     duration = float(manifest["end_s"])
@@ -194,6 +198,11 @@ def run_from_manifest(
             temporary_config, encoding="utf-8", xml_declaration=True
         )
         temporary_config.close()
+
+        print(
+            f"Running simulation for strategy '{strategy}', penetration {penetration:g}, seed {seed}..."
+        )
+
         run_simulation(
             duration=duration,
             incident_edge=str(incident["edge"]),
@@ -209,6 +218,7 @@ def run_from_manifest(
             ),
             visualization_interval_s=visualization_interval_s,
             show_occupancy_overlay=visualization_mode == "gui-overlay",
+            seed=seed,
         )
     finally:
         temporary_detector.close()
