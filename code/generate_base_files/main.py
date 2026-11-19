@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -11,65 +12,97 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from generate_base_files.generate_demand import generate_demand
-from generate_base_files.generate_vtypes import generate_vtypes
+def generate_routes(
+    config: dict[str, object],
+    network_directory: Path,
+    vtype_directory: Path,
+    experiment_directory: Path,
+    experiment_name: str,
+) -> list[Path]:
+    """Generate one standalone route file per CAV penetration."""
+    network_name = str(config["network"])
+    if Path(network_name).name != network_name or network_name in ("", ".", ".."):
+        raise ValueError("network must be a file name")
+    network_file = (network_directory / network_name).resolve()
+    if not network_file.is_file():
+        raise FileNotFoundError(f"Network file not found: {network_file}")
+    vtypes_name = str(config["vtypes"])
+    if Path(vtypes_name).name != vtypes_name or vtypes_name in ("", ".", ".."):
+        raise ValueError("vtypes must be a file name")
+    vtypes_file = (vtype_directory / vtypes_name).resolve()
+    if not vtypes_file.is_file():
+        raise FileNotFoundError(f"VTypes file not found: {vtypes_file}")
 
-
-def generate_matrix(config_file: Path) -> list[dict[str, int | float | str]]:
-    """Generate one route file for every configured scenario."""
-    config_file = config_file.resolve()
-    config = json.loads(config_file.read_text(encoding="utf-8"))
-    network_file = (config_file.parent / config["network"]).resolve()
-    output_directory = network_file.parent / "routes" / config_file.stem
+    output_directory = experiment_directory / experiment_name / "routes"
     output_directory.mkdir(parents=True, exist_ok=True)
-    vtypes_file = output_directory / "vtypes.add.xml"
-    vtype_parameters_file = (config_file.parent / config["vtype_parameters"]).resolve()
-    vehicle_type_percentages = {
-        str(vehicle_type): float(percentage)
-        for vehicle_type, percentage in config["vehicle_type_percentages"].items()
-    }
-    generate_vtypes(
-        vtype_parameters_file,
-        vtypes_file,
-        vehicle_type_percentages,
-    )
-    manifests: list[dict[str, int | float | str]] = []
-
-    for seed in config["seeds"]:
-        for penetration in config["cav_penetrations"]:
-            percentage = int(round(float(penetration) * 100))
-            scenario = f"seed{seed}_cav{percentage:02d}"
-            route_file = output_directory / f"{scenario}.rou.xml"
-            manifest = generate_demand(
-                network_file=network_file,
-                output_file=route_file,
-                period=float(config["period_s"]),
-                begin=float(config["begin_s"]),
-                end=float(config["end_s"]),
-                seed=int(seed),
-                cav_penetration=float(penetration),
-                vehicle_type_percentages=vehicle_type_percentages,
-            )
-            manifest["scenario"] = scenario
-            manifest["config"] = config_file.name
-            manifest["routes"] = str(route_file.resolve())
-            manifests.append(manifest)
-
-    (output_directory / "manifest.json").write_text(
-        json.dumps(manifests, indent=2) + "\n", encoding="utf-8"
-    )
-    return manifests
+    seed = int(config["routes_seed"])
+    if seed < 0:
+        raise ValueError("seed must be non-negative")
+    route_files: list[Path] = []
+    for penetration in config["cav_penetrations"]:
+        percentage = int(round(float(penetration) * 100))
+        route_file = output_directory / f"penetration_{percentage}.rou.xml"
+        generate_demand(
+            network_file=network_file,
+            output_file=route_file,
+            begin=float(config["begin_s"]),
+            end=float(config["end_s"]),
+            period=float(config["period_s"]),
+            seed=seed,
+            cav_penetration=float(penetration),
+            vtypes_file=vtypes_file,
+        )
+        route_files.append(route_file)
+    return route_files
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate the base-file demand matrix"
     )
-    parser.add_argument(
-        "--config", type=Path, required=True, help="Base-file JSON configuration"
-    )
+    parser.add_argument("experiment", help="Experiment name")
     args = parser.parse_args()
-    manifests = generate_matrix(args.config)
-    print(f"Generated {len(manifests)} base-file scenarios")
+
+    experiment_name = args.experiment
+    if Path(experiment_name).name != experiment_name or experiment_name in ("", ".", ".."):
+        raise ValueError("Experiment name must be a single directory name")
+
+    experiment_directory = Path(
+        os.environ.get(
+            "EXPERIMENT_DIR",
+            str(Path(__file__).resolve().parents[2] / "experiments"),
+        )
+    ).expanduser().resolve()
+    network_directory = Path(
+        os.environ.get(
+            "NETWORK_DIR",
+            str(Path(__file__).resolve().parents[2] / "source files" / "networks"),
+        )
+    ).expanduser().resolve()
+    vtype_directory = Path(
+        os.environ.get(
+            "VTYPE_DIR",
+            str(Path(__file__).resolve().parents[2] / "source files" / "car distribution"),
+        )
+    ).expanduser().resolve()
+    manifest_file = experiment_directory / experiment_name / "manifest.json"
+    if not manifest_file.is_file():
+        raise FileNotFoundError(f"Experiment manifest not found: {manifest_file}")
+
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+    if manifest.get("experiment") != experiment_name:
+        raise ValueError(
+            f"Manifest experiment '{manifest.get('experiment')}' "
+            f"does not match '{experiment_name}'"
+        )
+    route_files = generate_routes(
+        manifest,
+        network_directory,
+        vtype_directory,
+        experiment_directory,
+        experiment_name,
+    )
+    print(f"Generated {len(route_files)} route files")
 
 
 if __name__ == "__main__":

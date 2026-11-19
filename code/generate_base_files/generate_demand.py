@@ -1,9 +1,9 @@
-"""Generate reproducible SUMO demand files for experiment scenarios."""
+"""Generate reproducible SUMO demand route files."""
 
 from __future__ import annotations
 
+import copy
 import hashlib
-import math
 import os
 import random
 import subprocess
@@ -43,97 +43,15 @@ def _sumo_tool(name: str) -> Path:
     return tool
 
 
-def _assign_vehicle_types(
-    route_file: Path,
-    penetration: float,
-    seed: int,
-    vehicle_type_percentages: dict[str, float],
-) -> int:
-    tree = ET.parse(route_file)
-    root = tree.getroot()
-    vehicles = root.findall("vehicle")
-    cav_count = round(len(vehicles) * penetration)
-    cav_ids = {vehicle.get("id") for vehicle in vehicles}
-    selected = set(random.Random(seed).sample(sorted(cav_ids), cav_count))
-    human_vehicles = [
-        vehicle for vehicle in vehicles if vehicle.get("id") not in selected
-    ]
-    type_counts = _vehicle_type_counts(len(human_vehicles), vehicle_type_percentages)
-    shuffled_human_vehicles = human_vehicles[:]
-    random.Random(seed).shuffle(shuffled_human_vehicles)
-
-    offset = 0
-    for vehicle_type, count in type_counts.items():
-        for vehicle in shuffled_human_vehicles[offset : offset + count]:
-            vehicle.set("type", f"hdv_{vehicle_type.lower().replace(' ', '_')}")
-        offset += count
-    for vehicle in vehicles:
-        if vehicle.get("id") in selected:
-            vehicle.set("type", "CAV")
-
-    for vehicle_type in reversed(root.findall("vType")):
-        root.remove(vehicle_type)
-    root.insert(
-        0,
-        ET.Element(
-            "vType",
-            {
-                "id": "CAV",
-                "vClass": "passenger",
-                "carFollowModel": "Krauss",
-                "accel": "2.6",
-                "decel": "4.5",
-                "tau": "0.5",
-            },
-        ),
-    )
-    ET.indent(tree, space="    ")
-    tree.write(route_file, encoding="utf-8", xml_declaration=True)
-    return cav_count
-
-
-def _vehicle_type_counts(
-    vehicle_count: int, vehicle_type_percentages: dict[str, float]
-) -> dict[str, int]:
-    if not vehicle_type_percentages or not math.isclose(
-        sum(vehicle_type_percentages.values()), 100.0
-    ):
-        raise ValueError("vehicle_type_percentages must sum to 100")
-    if any(percentage <= 0 for percentage in vehicle_type_percentages.values()):
-        raise ValueError("vehicle_type_percentages must contain positive values")
-
-    counts = {}
-    assigned = 0
-    vehicle_types = list(vehicle_type_percentages.items())
-    for vehicle_type, percentage in vehicle_types[:-1]:
-        count = round(vehicle_count * percentage / 100)
-        counts[vehicle_type] = count
-        assigned += count
-    if vehicle_types:
-        counts[vehicle_types[-1][0]] = vehicle_count - assigned
-    return counts
-
-
-def generate_demand(
+def _generate_base_routes(
     network_file: Path,
     output_file: Path,
-    period: float,
     begin: float,
     end: float,
+    period: float,
     seed: int,
-    cav_penetration: float,
-    vehicle_type_percentages: dict[str, float],
-) -> dict[str, int | float | str]:
-    """Generate and validate one deterministic route file."""
-    if not 0.0 <= cav_penetration <= 1.0:
-        raise ValueError("cav_penetration must be between 0 and 1")
-    if period <= 0 or end <= begin:
-        raise ValueError("period must be positive and end must be greater than begin")
-
-    network_file = network_file.resolve()
-    network_edges = validate_network(network_file)
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-
+) -> None:
+    """Generate base SUMO trips and route them through the network."""
     with tempfile.TemporaryDirectory(prefix="sumo-demand-") as temporary_directory:
         trips_file = Path(temporary_directory) / "trips.xml"
         _run(
@@ -149,7 +67,7 @@ def generate_demand(
                 "--end",
                 str(end),
                 "--period",
-                str(period),
+                f"{period:.12g}",
                 "--seed",
                 str(seed),
                 "--trip-attributes",
@@ -174,6 +92,147 @@ def generate_demand(
             ]
         )
 
+
+def _load_human_distributions(vtypes_file: Path) -> list[ET.Element]:
+    vtypes_root = ET.parse(vtypes_file).getroot()
+    distributions = vtypes_root.findall("vTypeDistribution")
+    if not distributions:
+        raise ValueError(f"VTypes file contains no distributions: {vtypes_file}")
+    if any(not distribution.get("id") for distribution in distributions):
+        raise ValueError(f"VTypes distributions have no id: {vtypes_file}")
+    return distributions
+
+
+def _select_cav_vehicles(
+    vehicles: list[ET.Element],
+    penetration: float,
+    seed: int,
+) -> set[str]:
+    cav_count = round(len(vehicles) * penetration)
+    vehicle_ids = {
+        vehicle_id
+        for vehicle in vehicles
+        if (vehicle_id := vehicle.get("id"))
+    }
+    if cav_count > len(vehicle_ids):
+        raise ValueError("CAV count cannot exceed generated vehicle count")
+    return set(random.Random(seed).sample(sorted(vehicle_ids), cav_count))
+
+
+def _assign_cav_types(
+    vehicles: list[ET.Element],
+    selected_vehicle_ids: set[str],
+) -> None:
+    for vehicle in vehicles:
+        if vehicle.get("id") in selected_vehicle_ids:
+            vehicle.set("type", "CAV")
+
+
+def _assign_human_types(
+    vehicles: list[ET.Element],
+    selected_vehicle_ids: set[str],
+    distributions: list[ET.Element],
+    seed: int,
+) -> None:
+    distribution_ids = [
+        distribution_id
+        for distribution in distributions
+        if (distribution_id := distribution.get("id"))
+    ]
+    human_rng = random.Random(seed)
+    for vehicle in vehicles:
+        if vehicle.get("id") not in selected_vehicle_ids:
+            vehicle.set("type", human_rng.choice(distribution_ids))
+
+
+def _create_cav_type() -> ET.Element:
+    return ET.Element(
+        "vType",
+        {
+            "id": "CAV",
+            "vClass": "passenger",
+            "carFollowModel": "Krauss",
+            "accel": "2.6",
+            "decel": "4.5",
+            "tau": "0.5",
+            "sigma": "0.5",
+        },
+    )
+
+
+def _replace_vehicle_types(
+    root: ET.Element,
+    distributions: list[ET.Element],
+) -> None:
+    for vehicle_type in reversed(root.findall("vType")):
+        root.remove(vehicle_type)
+    for distribution in reversed(root.findall("vTypeDistribution")):
+        root.remove(distribution)
+
+    root.insert(0, _create_cav_type())
+    insert_at = 1
+    for distribution in distributions:
+        root.insert(insert_at, copy.deepcopy(distribution))
+        insert_at += 1
+
+
+def _assign_vehicle_types(
+    route_file: Path,
+    penetration: float,
+    seed: int,
+    vtypes_file: Path,
+) -> int:
+    tree = ET.parse(route_file)
+    root = tree.getroot()
+    vehicles = root.findall("vehicle")
+    distributions = _load_human_distributions(vtypes_file)
+    selected_cav_ids = _select_cav_vehicles(vehicles, penetration, seed)
+
+    _assign_cav_types(vehicles, selected_cav_ids)
+    _assign_human_types(
+        vehicles,
+        selected_cav_ids,
+        distributions,
+        seed,
+    )
+    _replace_vehicle_types(root, distributions)
+
+    ET.indent(tree, space="    ")
+    tree.write(route_file, encoding="utf-8", xml_declaration=True)
+    return len(selected_cav_ids)
+
+
+def generate_demand(
+    network_file: Path,
+    output_file: Path,
+    begin: float,
+    end: float,
+    period: float,
+    seed: int,
+    cav_penetration: float,
+    vtypes_file: Path,
+) -> dict[str, int | float | str]:
+    """Generate and validate one deterministic route file."""
+    if not 0.0 <= cav_penetration <= 1.0:
+        raise ValueError("cav_penetration must be between 0 and 1")
+    if period <= 0:
+        raise ValueError("period must be positive")
+    if end <= begin:
+        raise ValueError("end must be greater than begin")
+
+    network_file = network_file.resolve()
+    network_edges = validate_network(network_file)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    _generate_base_routes(
+        network_file,
+        output_file,
+        begin,
+        end,
+        period,
+        seed,
+    )
+
     route_tree = ET.parse(output_file)
     route_edges = {
         edge
@@ -182,22 +241,24 @@ def generate_demand(
     }
     unknown_edges = route_edges - network_edges
     if unknown_edges:
-        raise ValueError(f"Generated routes reference unknown edges: {sorted(unknown_edges)}")
+        raise ValueError(
+            f"Generated routes reference unknown edges: {sorted(unknown_edges)}"
+        )
 
     cav_count = _assign_vehicle_types(
         output_file,
         cav_penetration,
         seed,
-        vehicle_type_percentages,
+        vtypes_file,
     )
     vehicle_count = len(route_tree.getroot().findall("vehicle"))
     return {
         "network": str(network_file),
         "network_sha256": hashlib.sha256(network_file.read_bytes()).hexdigest(),
         "seed": seed,
-        "period_s": period,
         "begin_s": begin,
         "end_s": end,
+        "period_s": period,
         "vehicle_count": vehicle_count,
         "cav_penetration": cav_penetration,
         "cav_count": cav_count,

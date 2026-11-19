@@ -1,58 +1,102 @@
 # tesina-cs-computacion
 
+## Configuración local
+
+Copiar [`.env.sample`](.env.sample) a `.env` y ajustar las rutas de SUMO y los
+directorios del proyecto. Los valores se pueden cargar desde una sesión shell:
+
+```bash
+cp .env.sample .env
+set -a
+. ./.env
+set +a
+```
+
+El archivo `.env` está excluido de Git. `.env.sample` contiene los valores
+predeterminados del proyecto.
+
 ## Etapa 1: archivos base y demanda reproducible
 
-La red estática se conserva en `code/networks/synthetic/grid5x5.net.xml`. Los
-parámetros de demanda están en
-[`code/generate_base_files/config/base_files.json`](code/generate_base_files/config/base_files.json). Para generar la
-matriz de demandas se necesita SUMO (`SUMO_HOME`) y se ejecuta:
+La Etapa 1 recibe únicamente el nombre de un experimento y lee su configuración
+desde `EXPERIMENT_DIR/<nombre>/manifest.json`. Genera una ruta `.rou.xml` por
+cada tasa de penetración CAV configurada y no crea ningún archivo JSON de
+salida.
 
 ```bash
-python code/generate_base_files/main.py \
-  --config code/generate_base_files/config/base_files.json
+EXPERIMENT_DIR="$PWD/experiments" \
+NETWORK_DIR="$PWD/source files/networks" \
+VTYPE_DIR="$PWD/source files/car distribution" \
+python code/generate_base_files/main.py sample
 ```
 
-El proceso valida que la red tenga aristas externas con carriles, usa la
-semilla tanto para `randomTrips.py` como para `duarouter`, y asigna exactamente
-`round(n * cav_penetration)` vehículos como CAV. Los archivos se guardan junto a
-la red, en una carpeta `routes/<nombre-de-configuracion>/`, y el único
-manifiesto de cada configuración es
-`routes/<nombre-de-configuracion>/manifest.json`. Separar las configuraciones
-en carpetas evita sobrescribir rutas o manifiestos al utilizar más de un
-archivo JSON para la misma red.
+Si `EXPERIMENT_DIR` no está definido, se utiliza `<raíz-del-repositorio>/experiments`.
+Los directorios predeterminados son:
 
-Para generar toda la matriz configurada de archivos base (una combinación por
-cada semilla y tasa CAV), ejecutar:
+- Red: `NETWORK_DIR/<network>`
+- Tipos de vehículo: `VTYPE_DIR/<vtypes>`
+- Rutas: `EXPERIMENT_DIR/<experimento>/routes`
 
-```bash
-python code/generate_base_files/main.py \
-  --config code/generate_base_files/config/base_files.json
+El manifiesto de ejemplo es:
+
+```json
+{
+  "experiment": "sample",
+  "network": "grid5x5.net.xml",
+  "vtypes": "vtypes.add.xml",
+  "begin_s": 0,
+  "end_s": 3600,
+  "period_s": 1.5,
+  "routes_seed": 42,
+  "cav_penetrations": [0.0, 0.25, 0.5, 0.75, 1.0]
+}
 ```
+
+- `network` y `vtypes` contienen solo nombres de archivo.
+- `begin_s`, `end_s` y `period_s` controlan la demanda de `randomTrips.py`.
+- `routes_seed` se usa para `randomTrips.py`, `duarouter` y la selección
+  reproducible de CAV y distribuciones HDV.
+- `cav_penetrations` puede contener tasas entre `0.0` y `1.0`.
+
+El proceso valida la red y asigna exactamente
+`round(n * cav_penetration)` vehículos CAV. Las distribuciones humanas se leen
+directamente del archivo `.add.xml` indicado por `vtypes`.
 
 La estructura resultante es:
 
 ```text
-code/networks/synthetic/
-├── grid5x5.net.xml
-└── routes/
-    └── base_files/
-        ├── seed42_cav00.rou.xml
-        ├── seed42_cav25.rou.xml
-        ├── ...
-        └── manifest.json
+experiments/sample/routes/
+├── penetration_0.rou.xml
+├── penetration_25.rou.xml
+├── penetration_50.rou.xml
+├── penetration_75.rou.xml
+└── penetration_100.rou.xml
 ```
+
+`code/tools/generate_vtypes.py` contiene una utilidad independiente para
+generar el archivo `.add.xml` de distribuciones humanas usado por la Etapa 1.
+No genera ni modifica los `.rou.xml`.
+
+```bash
+python code/tools/generate_vtypes.py \
+  code/dataset_analysis/pNeuma/sumo_params.csv \
+  "source files/car distribution/vtypes.add.xml" \
+  --vehicle-type "Car=100" \
+  --seed 42
+```
+
+El resultado incluye 50 muestras por distribución y guarda reproduciblemente,
+dentro de un comentario XML, la herramienta que lo creó, la seed, el CSV de
+entrada y los porcentajes de tipos solicitados.
 
 ## Etapa 2: generación offline de artefactos
 
 La Etapa 2 se ejecuta con una configuración independiente de los archivos
 base:
 [`code/generate_offline_artifacts/config/offline_artifacts.json`](code/generate_offline_artifacts/config/offline_artifacts.json).
-Esta configuración referencia la red y una carpeta de rutas producida por la
-Etapa 1 mediante su `manifest.json`, y define una lista de experimentos. Cada
-experimento referencia un único escenario base y puede definir sus propios
-parámetros de simulación, incidente, detectores y subgrafo. La red
-correspondiente se obtiene de la entrada del manifiesto; no se repite en esta
-configuración.
+Esta configuración define una lista de experimentos. Cada experimento puede
+definir sus propios parámetros de simulación, incidente, detectores y subgrafo.
+La red y las rutas corresponden a los archivos base generados para el escenario
+configurado.
 
 ```bash
 python code/generate_offline_artifacts/main.py \
@@ -79,10 +123,10 @@ etapas. No se genera un manifiesto global: cada experimento tiene su propio
 `manifest.json`. La etapa reutiliza la demanda concreta del escenario para
 ponderar el grafo dual y conserva los parámetros del incidente en el manifiesto.
 
-El `.sumocfg` referencia el `.net.xml` y el `.rou.xml` resueltos desde el
-manifiesto de archivos base, además de los detectores E2 generados. Los
-parámetros del incidente se mantienen para que la Etapa 3 los aplique mediante
-TraCI y `IncidentManager`.
+El `.sumocfg` referencia el `.net.xml` y el `.rou.xml` resueltos para el
+experimento, además de los detectores E2 generados. Los parámetros del incidente
+se mantienen en el manifiesto para que la Etapa 3 los aplique mediante TraCI y
+`IncidentManager`.
 
 El incidente no se genera como un archivo adicional de SUMO. Durante la
 simulación se crea y controla dinámicamente mediante

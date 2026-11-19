@@ -1,0 +1,16 @@
+{
+  "experiment": "sample",
+  "network": "grid5x5.net.xml",
+  "vtypes": "vtypes.add.xml",
+  "begin_s": 0,
+  "end_s": 3600,
+  "period_s": 1.5,
+  "routes_seed": 42,
+  "cav_penetrations": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ]
+}
