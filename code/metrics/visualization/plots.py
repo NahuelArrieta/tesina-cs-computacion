@@ -102,7 +102,11 @@ def _save_figure(
     return paths
 
 
-def _write_report(output_directory: Path, paths: Iterable[Path]) -> Path:
+def _write_report(
+    output_directory: Path,
+    paths: Iterable[Path],
+    manifest: Mapping[str, Any] | None = None,
+) -> Path:
     plot_paths: dict[str, dict[str, Path]] = {}
     for path in paths:
         suffix = path.suffix.lower().lstrip(".")
@@ -123,13 +127,28 @@ def _write_report(output_directory: Path, paths: Iterable[Path]) -> Path:
                 f'<img src="data:{mime_type};base64,{content}" '
                 f'alt="{title}" />'
             )
+    manifest_section = ""
+    if manifest is not None:
+        description = html.escape(str(manifest.get("description", "")))
+        manifest_json = html.escape(
+            json.dumps(manifest, indent=2, ensure_ascii=False)
+        )
+        manifest_section = (
+            "<section><h2>Experiment data</h2>"
+            f"<p><strong>Description:</strong> {description}</p>"
+            "<details><summary>Manifest JSON</summary>"
+            f"<pre>{manifest_json}</pre>"
+            "</details></section>"
+        )
     report_path = output_directory.parent / "report.html"
     report_path.write_text(
         "<!doctype html><html><head><meta charset=\"utf-8\">"
         "<title>Metrics visualizations</title>"
         "<style>body{font-family:sans-serif;max-width:1200px;margin:auto}"
-        "img{display:block;max-width:100%;margin-bottom:2rem}</style>"
+        "img{display:block;max-width:100%;margin-bottom:2rem}"
+        "pre{background:#f5f5f5;padding:1rem;overflow:auto}</style>"
         "</head><body><h1>Metrics visualizations</h1>"
+        + manifest_section
         + "".join(sections)
         + "</body></html>\n",
         encoding="utf-8",
@@ -471,6 +490,7 @@ def visualize_metrics(
     dpi: int = 150,
     incident_window: StageWindows = None,
     sim_duration_s: float = 3600.0,
+    manifest: Mapping[str, Any] | None = None,
 ) -> list[Path]:
     metrics_path = Path(metrics_directory)
     output_path = Path(output_directory)
@@ -603,6 +623,6 @@ def visualize_metrics(
             )
         )
 
-    report_path = _write_report(output_path, paths)
+    report_path = _write_report(output_path, paths, manifest)
     paths.append(report_path)
     return paths
