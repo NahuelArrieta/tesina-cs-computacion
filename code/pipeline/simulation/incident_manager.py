@@ -1,5 +1,8 @@
 import traci
-from .logs import log
+try:
+    from .logs import log
+except ImportError:
+    from logs import log
 
 
 class IncidentManager:

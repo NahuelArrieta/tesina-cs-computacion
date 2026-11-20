@@ -7,9 +7,15 @@ from concurrent.futures import ProcessPoolExecutor
 import json
 import multiprocessing
 import os
+import sys
 from pathlib import Path
 
-from simulation.simulator import run_from_manifest
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from simulator import run_from_manifest
+else:
+    from .simulator import run_from_manifest
 
 
 STRATEGIES = ("m0", "m1", "m2", "m3")
@@ -63,7 +69,7 @@ def main() -> None:
     experiment_directory = Path(
         os.environ.get(
             "EXPERIMENT_DIR",
-            str(Path(__file__).resolve().parents[2] / "experiments"),
+            str(Path(__file__).resolve().parents[3] / "experiments"),
         )
     ).expanduser().resolve()
     manifest_file = experiment_directory / args.experiment / "manifest.json"

@@ -5,7 +5,10 @@ import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import traci
-from .incident_manager import IncidentManager
+try:
+    from .incident_manager import IncidentManager
+except ImportError:
+    from incident_manager import IncidentManager
 
 ## Output files
 TRIPINFO_PATH = "tripinfo.xml"
@@ -62,7 +65,10 @@ def run_simulation(
     visualizer = None
     if subgraph_file:
         from utils.dual_graph_handler import load_dual_graph
-        from .subgraph_visualization import SubgraphMonitor, SumoGuiOverlay
+        try:
+            from .subgraph_visualization import SubgraphMonitor, SumoGuiOverlay
+        except ImportError:
+            from subgraph_visualization import SubgraphMonitor, SumoGuiOverlay
 
         subgraph = load_dual_graph(str(subgraph_file)).copy()
         visualizer = SumoGuiOverlay(

@@ -15,6 +15,30 @@ set +a
 El archivo `.env` está excluido de Git. `.env.sample` contiene los valores
 predeterminados del proyecto.
 
+## Organización del pipeline
+
+Las cinco etapas viven dentro de carpetas independientes bajo
+`code/pipeline/`. Cada etapa contiene su entry point y los módulos necesarios
+para ejecutarla:
+
+```text
+code/pipeline/
+├── generate_base_files/                 # Etapa 1
+├── generate_offline_artifacts/          # Etapa 2
+├── simulation/                          # Etapa 3
+├── generate_metrics/                    # Etapa 4
+└── generate_reports/                    # Etapa 5
+```
+
+Los módulos pueden ejecutarse directamente o mediante `PYTHONPATH=code`, por
+ejemplo:
+
+```bash
+PYTHONPATH=code python -m pipeline.simulation.main sample
+PYTHONPATH=code python -m pipeline.generate_metrics.main sample
+PYTHONPATH=code python -m pipeline.generate_reports.main sample
+```
+
 ## Etapa 1: archivos base y demanda reproducible
 
 La Etapa 1 recibe únicamente el nombre de un experimento y lee su configuración
@@ -26,7 +50,7 @@ y no crea ningún archivo JSON de salida.
 EXPERIMENT_DIR="$PWD/experiments" \
 NETWORK_DIR="$PWD/source files/networks" \
 VTYPE_DIR="$PWD/source files/car distribution" \
-python code/generate_base_files/main.py sample
+PYTHONPATH=code python code/pipeline/generate_base_files/main.py sample
 ```
 
 Si `EXPERIMENT_DIR` no está definido, se utiliza `<raíz-del-repositorio>/experiments`.
@@ -83,7 +107,8 @@ experiments/sample/routes/
 └── penetration_100.rou.xml
 ```
 
-`code/tools/generate_vtypes.py` contiene una utilidad independiente para
+`code/tools/generate_vtypes.py` contiene una
+utilidad de la Etapa 1 para
 generar el archivo `.add.xml` de distribuciones humanas usado por la Etapa 1.
 No genera ni modifica los `.rou.xml`.
 
@@ -101,9 +126,9 @@ entrada y los porcentajes de tipos solicitados.
 
 Internamente, Stage 1 está dividido en dos módulos:
 
-- [`code/generate_base_files/generate_routes.py`](code/generate_base_files/generate_routes.py)
+- [`code/pipeline/generate_base_files/generate_routes.py`](code/pipeline/generate_base_files/generate_routes.py)
   genera la red de rutas compartida y valida las aristas.
-- [`code/generate_base_files/generate_penetrations.py`](code/generate_base_files/generate_penetrations.py)
+- [`code/pipeline/generate_base_files/generate_penetrations.py`](code/pipeline/generate_base_files/generate_penetrations.py)
   asigna CAV/HDV y genera un archivo por tasa de penetración.
 
 ## Etapa 2: generación offline de artefactos
@@ -116,7 +141,7 @@ desde `EXPERIMENT_DIR/<nombre>/manifest.json`. La red se resuelve desde
 ```bash
 EXPERIMENT_DIR="$PWD/experiments" \
 NETWORK_DIR="$PWD/source files/networks" \
-python code/generate_offline_artifacts/main.py sample
+PYTHONPATH=code python code/pipeline/generate_offline_artifacts/main.py sample
 ```
 
 Los campos adicionales del manifiesto son `incident`, `detectors` y `subgraph`.
@@ -144,7 +169,7 @@ los aplique mediante TraCI y `IncidentManager`.
 
 El incidente no se genera como un archivo adicional de SUMO. Durante la
 simulación se crea y controla dinámicamente mediante
-[`IncidentManager`](code/simulation/incident_manager.py), que agrega el
+[`IncidentManager`](code/pipeline/simulation/incident_manager.py), que agrega el
 vehículo-obstrucción por TraCI, inicia la obstrucción y libera el carril al
 finalizar el intervalo configurado.
 
@@ -171,12 +196,12 @@ muestran únicamente el incidente o también el estado de ocupación:
 
 ```bash
 # Solo marcar el incidente
-SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.main \
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m pipeline.simulation.main \
   incident_a2b2 \
   --strategy m0
 
 # Marcar el incidente y mostrar la ocupación
-SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.main \
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m pipeline.simulation.main \
   incident_a2b2 \
   --strategy m0 \
   --gui-overlay
@@ -193,23 +218,23 @@ detectores; no genera ningún archivo `.sumocfg` persistente. La penetración
 utilizada se selecciona desde `cav_penetrations` en el manifiesto.
 La resolución temporal de SUMO es común a todos los experimentos y está
 definida por `DEFAULT_STEP_LENGTH_S = 0.1` en
-[`code/simulation/simulator.py`](code/simulation/simulator.py).
+[`code/pipeline/simulation/simulator.py`](code/pipeline/simulation/simulator.py).
 
 ```bash
-PYTHONPATH=code python -m simulation.main sample
+PYTHONPATH=code python -m pipeline.simulation.main sample
 ```
 
 Sin flags se ejecutan todas las combinaciones de penetración y estrategia.
 Para ejecutar una sola estrategia en todas las penetraciones:
 
 ```bash
-PYTHONPATH=code python -m simulation.main sample --strategy m0
+PYTHONPATH=code python -m pipeline.simulation.main sample --strategy m0
 ```
 
 Para ejecutar una única penetración:
 
 ```bash
-PYTHONPATH=code python -m simulation.main sample --penetration 0.25
+PYTHONPATH=code python -m pipeline.simulation.main sample --penetration 0.25
 ```
 
 El manifiesto define las seeds de simulación en `simulation_seeds`. Sin
@@ -224,7 +249,7 @@ La ejecución es secuencial por defecto. Para ejecutar simulaciones en procesos
 independientes se puede indicar un límite de workers:
 
 ```bash
-PYTHONPATH=code python -m simulation.main sample --workers 4
+PYTHONPATH=code python -m pipeline.simulation.main sample --workers 4
 ```
 
 Cada proceso tiene su propia conexión TraCI y su propio proceso SUMO. No se
@@ -244,13 +269,13 @@ para cada combinación de penetración y estrategia. El grafo se toma desde
 `output/p{penetración}/m{estrategia}/seed_{seed}/`.
 
 ```bash
-PYTHONPATH=code python code/metrics/main.py sample
+PYTHONPATH=code python code/pipeline/generate_metrics/main.py sample
 ```
 
 Para procesar una sola combinación:
 
 ```bash
-PYTHONPATH=code python code/metrics/main.py sample \
+PYTHONPATH=code python code/pipeline/generate_metrics/main.py sample \
   --penetration 0.25 \
   --strategy m1
 ```
@@ -278,7 +303,7 @@ La Etapa 5 genera visualizaciones SVG comparables para el experimento a partir
 de los resultados agregados por la Etapa 4:
 
 ```bash
-PYTHONPATH=code python -m metrics.visualization.main sample
+PYTHONPATH=code python -m pipeline.generate_reports.main sample
 ```
 
 Los resultados se guardan únicamente en formato SVG:

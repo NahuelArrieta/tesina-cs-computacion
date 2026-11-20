@@ -10,10 +10,14 @@ from pathlib import Path
 from typing import Any
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from aggregate import aggregate_metrics, aggregate_rows
+    from metrics_handler import collect_metrics
+else:
+    from .aggregate import aggregate_metrics, aggregate_rows
+    from .metrics_handler import collect_metrics
 
-from metrics.aggregate import aggregate_metrics, aggregate_rows
-from metrics.metrics_handler import collect_metrics
 from utils.dual_graph_handler import load_dual_graph
 
 
@@ -37,7 +41,7 @@ def extract_metrics(
     experiment_directory = Path(
         os.environ.get(
             "EXPERIMENT_DIR",
-            str(Path(__file__).resolve().parents[2] / "experiments"),
+            str(Path(__file__).resolve().parents[3] / "experiments"),
         )
     ).expanduser().resolve() / experiment_name
     manifest = _load_manifest(experiment_directory)

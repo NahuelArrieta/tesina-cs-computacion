@@ -6,9 +6,14 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 from utils.dual_graph_handler import load_dual_graph
 from utils.subgraph_extractor import get_zones
-from .congestion_metrics import parse_and_compute_congestion_e2
-from .efficiency_metrics import compute_network_efficiency, parse_tripinfo
-from .stability_metrics import parse_and_compute_phased_stability
+try:
+    from .congestion_metrics import parse_and_compute_congestion_e2
+    from .efficiency_metrics import compute_network_efficiency, parse_tripinfo
+    from .stability_metrics import parse_and_compute_phased_stability
+except ImportError:
+    from congestion_metrics import parse_and_compute_congestion_e2
+    from efficiency_metrics import compute_network_efficiency, parse_tripinfo
+    from stability_metrics import parse_and_compute_phased_stability
 
 
 MetricData = dict[str, Any]

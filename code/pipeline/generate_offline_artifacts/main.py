@@ -12,13 +12,14 @@ from typing import Any
 import networkx as nx
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from build_dual_graph import parse_network_xml, parse_routes_xml
+    from generate_detectors import generate_e2_detectors
+else:
+    from .build_dual_graph import parse_network_xml, parse_routes_xml
+    from .generate_detectors import generate_e2_detectors
 
-from generate_offline_artifacts.build_dual_graph import (
-    parse_network_xml,
-    parse_routes_xml,
-)
-from generate_offline_artifacts.generate_detectors import generate_e2_detectors
 from utils.dual_graph_handler import (
     assign_turning_probabilities,
     build_dual_graph,
@@ -125,13 +126,13 @@ def main() -> None:
     experiment_directory = Path(
         os.environ.get(
             "EXPERIMENT_DIR",
-            str(Path(__file__).resolve().parents[2] / "experiments"),
+            str(Path(__file__).resolve().parents[3] / "experiments"),
         )
     ).expanduser().resolve()
     network_directory = Path(
         os.environ.get(
             "NETWORK_DIR",
-            str(Path(__file__).resolve().parents[2] / "source files" / "networks"),
+            str(Path(__file__).resolve().parents[3] / "source files" / "networks"),
         )
     ).expanduser().resolve()
     manifest_file = experiment_directory / args.experiment / "manifest.json"

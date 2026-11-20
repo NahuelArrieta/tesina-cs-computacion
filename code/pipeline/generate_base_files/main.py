@@ -9,13 +9,13 @@ import sys
 from pathlib import Path
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from generate_base_files.generate_routes import (
-    generate_base_routes,
-    validate_routes,
-)
-from generate_base_files.generate_penetrations import assign_vehicle_types
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from generate_routes import generate_base_routes, validate_routes
+    from generate_penetrations import assign_vehicle_types
+else:
+    from .generate_routes import generate_base_routes, validate_routes
+    from .generate_penetrations import assign_vehicle_types
 def generate_routes(
     config: dict[str, object],
     network_directory: Path,
@@ -82,19 +82,19 @@ def main() -> None:
     experiment_directory = Path(
         os.environ.get(
             "EXPERIMENT_DIR",
-            str(Path(__file__).resolve().parents[2] / "experiments"),
+            str(Path(__file__).resolve().parents[3] / "experiments"),
         )
     ).expanduser().resolve()
     network_directory = Path(
         os.environ.get(
             "NETWORK_DIR",
-            str(Path(__file__).resolve().parents[2] / "source files" / "networks"),
+            str(Path(__file__).resolve().parents[3] / "source files" / "networks"),
         )
     ).expanduser().resolve()
     vtype_directory = Path(
         os.environ.get(
             "VTYPE_DIR",
-            str(Path(__file__).resolve().parents[2] / "source files" / "car distribution"),
+            str(Path(__file__).resolve().parents[3] / "source files" / "car distribution"),
         )
     ).expanduser().resolve()
     manifest_file = experiment_directory / experiment_name / "manifest.json"

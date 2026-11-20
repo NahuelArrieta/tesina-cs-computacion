@@ -9,10 +9,9 @@ from typing import Any
 
 import sumolib
 
-# When this file is executed directly, Python puts ``code/tools`` on
-# sys.path rather than the project ``code`` directory.
+# When executed directly, add the project ``code`` directory to sys.path.
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from utils.dual_graph_handler import (
     assign_turning_probabilities,

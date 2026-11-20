@@ -10,8 +10,10 @@ from pathlib import Path
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-from metrics.visualization.plots import visualize_metrics
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from plots import visualize_metrics
+else:
+    from .plots import visualize_metrics
 
 
 CONGESTION_ZONES = (
