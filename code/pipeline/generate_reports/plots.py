@@ -207,6 +207,7 @@ def _create_grid(
     *,
     ncols: int = 2,
     figsize_per_cell: tuple[float, float] = (6.0, 4.0),
+    sharey: bool = False
 ) -> tuple[plt.Figure, list[plt.Axes]]:
     nrows = max(1, math.ceil(n_items / ncols))
     figsize = (figsize_per_cell[0] * ncols, figsize_per_cell[1] * nrows)
@@ -216,6 +217,7 @@ def _create_grid(
         figsize=figsize,
         constrained_layout=True,
         squeeze=False,
+        sharey=sharey,
     )
     flat_axes = list(axes.flat)
     for axis in flat_axes[n_items:]:
@@ -548,9 +550,16 @@ def _plot_congestion_timeseries_grid(
     artifacts: list[PlotArtifact] = []
     penetrations = _discover_penetrations(metrics_directory, positive_only=True)
 
-    for penetration in penetrations:
-        figure, axes = _create_grid(len(zones), ncols=2, figsize_per_cell=(6.5, 4.0))
-        for axis, zone in zip(axes, zones):
+    for zone in zones:
+        figure, axes = _create_grid(
+            len(penetrations),
+            ncols=2,
+            figsize_per_cell=(6.5, 4.0),
+            sharey=True,
+        )
+        zone_label = _human_zone_label(zone)
+
+        for axis, penetration in zip(axes, penetrations):
             for strategy in ALL_STRATEGIES:
                 source_penetration = (
                     0 if strategy == BASELINE_STRATEGY else penetration
@@ -580,23 +589,24 @@ def _plot_congestion_timeseries_grid(
                         linestyle=style.get("linestyle", "-"),
                         marker=style.get("marker"),
                         markersize=style.get("markersize"),
-                        markevery=max(1, len(xs) // 10),  # ~10 marcadores por curva
+                        markevery=max(1, len(xs) // 10),
                         alpha=style.get("alpha", 0.9),
                     )
+
             _draw_stage_boundaries(axis, incident_window)
-            axis.set_title(_human_zone_label(zone))
+            axis.set_title(f"{penetration}% CAV")
             axis.set_xlabel("Time (s)")
             axis.set_ylabel(ylabel)
             axis.grid(alpha=0.25)
 
         _add_shared_legend(figure, axes[0])
-        figure.suptitle(f"{title} by congestion zone - {penetration}% CAV")
-        report_title = f"{_human_metric_label(metric_name)} over time - {penetration}% CAV"
+        figure.suptitle(f"{title} - {zone_label}", y=1.05)
+        report_title = f"{_human_metric_label(metric_name)} over time - {zone_label}"
         artifacts.extend(
             _save_figure(
                 figure,
                 config,
-                f"metrics_congestion_{metric_name}_by_zone_p{penetration}",
+                f"metrics_congestion_{metric_name}_{zone}_by_penetration",
                 report_title,
                 is_grid=True,
             )
