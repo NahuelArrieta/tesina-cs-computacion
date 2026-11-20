@@ -17,6 +17,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+matplotlib.rcParams["svg.hashsalt"] = "reproducible"
 
 MetricData = dict[str, Any]
 StageWindows = tuple[float, float] | None
@@ -305,7 +306,7 @@ def _save_figure(
             if file_format != "svg":
                 raise ValueError(f"Unsupported output format: {file_format}")
             path = config.output_directory / f"{stem}.{file_format}"
-            figure.savefig(path, dpi=config.dpi, bbox_inches="tight")
+            figure.savefig(path, dpi=config.dpi, bbox_inches="tight", metadata={"Date": None})
             artifacts.append(PlotArtifact(path=path, title=title, is_grid=is_grid))
     finally:
         plt.close(figure)
