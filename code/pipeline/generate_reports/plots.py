@@ -61,13 +61,10 @@ METRIC_LABELS = {
 }
 
 EFFICIENCY_KEYS = (
-    "total_travel_time_s",
     "mean_travel_time_s",
     "mean_delay_s",
-    "total_delay_s",
     "throughput_veh_hour",
     "mean_speed_mps",
-    "completed_vehicles",
 )
 
 CONGESTION_METRICS = (
