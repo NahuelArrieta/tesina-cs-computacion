@@ -90,7 +90,6 @@ def export_visualizations(experiment_name: str) -> list[Path]:
         formats=["svg"],
         dpi=150,
         incident_window=incident_window,
-        sim_duration_s=float(manifest["end_s"]),
         manifest=manifest,
     )
 

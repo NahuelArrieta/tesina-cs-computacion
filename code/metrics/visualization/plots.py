@@ -62,29 +62,6 @@ def _human_zone_label(zone: str) -> str:
     return labels.get(zone, zone.replace("_", " ").title())
 
 
-def _available_strategies(metrics_directory: Path) -> list[str]:
-    return sorted(
-        directory.name
-        for directory in metrics_directory.iterdir()
-        if directory.is_dir() and (directory / "metrics.json").is_file()
-    )
-
-
-def _read_metrics(
-    metrics_directory: Path, strategies: Iterable[str]
-) -> dict[str, MetricData]:
-    data: dict[str, MetricData] = {}
-    for strategy in strategies:
-        metrics_file = metrics_directory / strategy / "metrics.json"
-        if not metrics_file.is_file():
-            raise FileNotFoundError(f"Metrics file not found: {metrics_file}")
-        value = json.loads(metrics_file.read_text(encoding="utf-8"))
-        if not isinstance(value, dict):
-            raise ValueError(f"Metrics file must contain an object: {metrics_file}")
-        data[strategy] = value
-    return data
-
-
 def _read_csv(path: Path) -> list[dict[str, str]]:
     if not path.is_file():
         raise FileNotFoundError(f"Time-series file not found: {path}")
@@ -282,102 +259,6 @@ def _write_report(
         encoding="utf-8",
     )
     return report_path
-
-
-def _plot_summary(
-    data: Mapping[str, MetricData],
-    output_directory: Path,
-    formats: Iterable[str],
-    dpi: int,
-) -> list[Path]:
-    efficiency_keys = (
-        "mean_travel_time_s",
-        "mean_delay_s",
-        "mean_speed_mps",
-        "throughput_veh_hour",
-    )
-    strategies = list(data)
-    figure, axes = plt.subplots(2, 2, figsize=(11, 7), constrained_layout=True)
-    for axis, key in zip(axes.flat, efficiency_keys):
-        values = [
-            float(data[strategy].get("efficiency", {}).get(key, 0.0))
-            for strategy in strategies
-        ]
-        axis.bar(strategies, values)
-        axis.set_title(key.replace("_", " ").title())
-        axis.grid(axis="y", alpha=0.25)
-        axis.set_axisbelow(True)
-    figure.suptitle("Efficiency comparison")
-    return _save_figure(figure, output_directory, "efficiency_comparison", formats, dpi)
-
-
-def _plot_stability(
-    metrics_directory: Path,
-    strategies: Iterable[str],
-    output_directory: Path,
-    formats: Iterable[str],
-    dpi: int,
-    incident_window: StageWindows,
-) -> list[Path]:
-    figure, axis = plt.subplots(figsize=(11, 6), constrained_layout=True)
-    for strategy in strategies:
-        rows = _read_csv(metrics_directory / strategy / "metrics_stability_by_step.csv")
-        axis.plot(
-            [float(row["time"]) for row in rows],
-            [float(row["mean_speed_mps"]) for row in rows],
-            label=strategy,
-        )
-    _draw_stage_boundaries(axis, incident_window)
-    axis.set_title("Mean speed over time")
-    axis.set_xlabel("Time (s)")
-    axis.set_ylabel("Mean speed (m/s)")
-    axis.grid(alpha=0.25)
-    axis.legend()
-    return _save_figure(figure, output_directory, "stability_mean_speed", formats, dpi)
-
-
-def _plot_congestion(
-    metrics_directory: Path,
-    strategies: Iterable[str],
-    data: Mapping[str, MetricData],
-    output_directory: Path,
-    formats: Iterable[str],
-    dpi: int,
-    incident_window: StageWindows,
-) -> list[Path]:
-    zones = sorted(
-        {
-            zone
-            for strategy in strategies
-            for zone in data[strategy].get("congestion", {})
-        }
-    )
-    paths: list[Path] = []
-    for zone in zones:
-        figure, axis = plt.subplots(figsize=(11, 6), constrained_layout=True)
-        for strategy in strategies:
-            rows = _read_csv(
-                metrics_directory
-                / strategy
-                / f"metrics_congestion_{zone}_by_interval.csv"
-            )
-            axis.plot(
-                [float(row["interval_midpoint_s"]) for row in rows],
-                [float(row["mean_queue_length_m"]) for row in rows],
-                label=strategy,
-            )
-        _draw_stage_boundaries(axis, incident_window)
-        axis.set_title(f"Mean queue length: {zone.replace('_', ' ').title()}")
-        axis.set_xlabel("Time (s)")
-        axis.set_ylabel("Queue length (m)")
-        axis.grid(alpha=0.25)
-        axis.legend()
-        paths.extend(
-            _save_figure(
-                figure, output_directory, f"congestion_{zone}", formats, dpi
-            )
-        )
-    return paths
 
 
 def _read_aggregated(metrics_directory: Path) -> dict[tuple[int, str], MetricData]:
@@ -627,92 +508,6 @@ def _plot_stability_by_phase(
         formats,
         dpi,
     )
-
-
-def _plot_timeseries(
-    metrics_directory: Path,
-    metric_name: str,
-    title: str,
-    output_directory: Path,
-    formats: Iterable[str],
-    dpi: int,
-    incident_window: StageWindows,
-    filename_prefix: str,
-    smoothing_window_s: float | None = None,
-) -> list[Path]:
-    paths = []
-    penetrations = sorted(
-        int(path.name[1:])
-        for path in metrics_directory.glob("p*")
-        if int(path.name[1:]) > 0
-    )
-    for penetration in penetrations:
-        figure, axis = plt.subplots(figsize=(11, 6), constrained_layout=True)
-        strategies = ("m0",) if penetration == 0 else ("m0", "m1", "m2", "m3")
-        for strategy in strategies:
-            source_penetration = 0 if strategy == "m0" else penetration
-            csv_file = (
-                metrics_directory
-                / f"p{source_penetration}"
-                / strategy
-                / f"{filename_prefix}.csv"
-            )
-            if not csv_file.is_file():
-                continue
-            rows = _read_csv(csv_file)
-            if not rows:
-                continue
-            index_column = (
-                "time"
-                if "time" in rows[0]
-                else "interval_midpoint_s"
-            )
-            mean_column = metric_name
-            std_column = f"{metric_name}_std"
-            xs = [float(row[index_column]) for row in rows]
-            ys = [float(row[mean_column]) for row in rows if mean_column in row]
-            if len(ys) != len(xs):
-                continue
-            stds = [
-                float(row.get(std_column, 0.0))
-                for row in rows
-            ]
-            if smoothing_window_s is not None:
-                ys = _moving_average(ys, xs, smoothing_window_s)
-                stds = _moving_average(stds, xs, smoothing_window_s)
-            if strategy == "m0" and penetration > 0:
-                axis.plot(
-                    xs,
-                    ys,
-                    color="#666666",
-                    linestyle="--",
-                    label="M0 (baseline)",
-                )
-            else:
-                axis.plot(xs, ys, label=strategy.upper())
-                axis.fill_between(
-                    xs,
-                    [value - error for value, error in zip(ys, stds)],
-                    [value + error for value, error in zip(ys, stds)],
-                    alpha=0.15,
-                )
-        _draw_stage_boundaries(axis, incident_window)
-        axis.set_title(f"{title}: {penetration}% CAV")
-        axis.set_xlabel("Time (s)")
-        axis.set_ylabel(metric_name.replace("_", " "))
-        axis.grid(alpha=0.25)
-        axis.legend()
-        paths.extend(
-            _save_figure(
-                figure,
-                output_directory,
-                f"{filename_prefix}_p{penetration}",
-                formats,
-                dpi,
-            )
-        )
-    return paths
-
 
 def _plot_speed_timeseries_grid(
     metrics_directory: Path,
@@ -964,7 +759,6 @@ def visualize_metrics(
     formats: Iterable[str] = ("svg",),
     dpi: int = 150,
     incident_window: StageWindows = None,
-    sim_duration_s: float = 3600.0,
     manifest: Mapping[str, Any] | None = None,
 ) -> list[Path]:
     metrics_path = Path(metrics_directory)
