@@ -379,10 +379,15 @@ def _plot_seed_boxplots(
         box_data = []
         labels = []
         for strategy in ("m0", "m1", "m2", "m3"):
-            if (penetration, strategy) not in data:
+            source_penetration = 0 if strategy == "m0" else penetration
+            if (source_penetration, strategy) not in data:
                 continue
             seed_values = []
-            for seed in _seed_values(metrics_directory, penetration, strategy):
+            for seed in _seed_values(
+                metrics_directory,
+                source_penetration,
+                strategy,
+            ):
                 current = seed
                 try:
                     for key in (section, *leaf_path):
@@ -431,10 +436,12 @@ def _plot_timeseries(
     )
     for penetration in penetrations:
         figure, axis = plt.subplots(figsize=(11, 6), constrained_layout=True)
-        for strategy in ("m0", "m1", "m2", "m3"):
+        strategies = ("m0",) if penetration == 0 else ("m0", "m1", "m2", "m3")
+        for strategy in strategies:
+            source_penetration = 0 if strategy == "m0" else penetration
             csv_file = (
                 metrics_directory
-                / f"p{penetration}"
+                / f"p{source_penetration}"
                 / strategy
                 / f"{filename_prefix}.csv"
             )
@@ -458,13 +465,22 @@ def _plot_timeseries(
                 float(row.get(std_column, 0.0))
                 for row in rows
             ]
-            axis.plot(xs, ys, label=strategy.upper())
-            axis.fill_between(
-                xs,
-                [value - error for value, error in zip(ys, stds)],
-                [value + error for value, error in zip(ys, stds)],
-                alpha=0.15,
-            )
+            if strategy == "m0" and penetration > 0:
+                axis.plot(
+                    xs,
+                    ys,
+                    color="#666666",
+                    linestyle="--",
+                    label="M0 (baseline)",
+                )
+            else:
+                axis.plot(xs, ys, label=strategy.upper())
+                axis.fill_between(
+                    xs,
+                    [value - error for value, error in zip(ys, stds)],
+                    [value + error for value, error in zip(ys, stds)],
+                    alpha=0.15,
+                )
         _draw_stage_boundaries(axis, incident_window)
         axis.set_title(f"{title}: {penetration}% CAV")
         axis.set_xlabel("Time (s)")
