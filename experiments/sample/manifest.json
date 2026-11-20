@@ -4,7 +4,7 @@
   "network": "grid5x5.net.xml",
   "vtypes": "vtypes.add.xml",
   "begin_s": 0,
-  "end_s": 100,
+  "end_s": 1000,
   "period_s": 1.5,
   "routes_seed": 420,
   "cav_penetrations": [
@@ -27,7 +27,7 @@
   },
   "subgraph": {
     "min_probability": 0.05,
-    "max_travel_time_s": 100,
+    "max_travel_time_s": 50,
     "intersection_delay_s": 10
   }
 }
