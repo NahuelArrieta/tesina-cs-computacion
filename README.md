@@ -1,92 +1,175 @@
 # tesina-cs-computacion
 
-## Etapa 1: archivos base y demanda reproducible
+## Configuración local
 
-La red estática se conserva en `code/networks/synthetic/grid5x5.net.xml`. Los
-parámetros de demanda están en
-[`code/generate_base_files/config/base_files.json`](code/generate_base_files/config/base_files.json). Para generar la
-matriz de demandas se necesita SUMO (`SUMO_HOME`) y se ejecuta:
+Copiar [`.env.sample`](.env.sample) a `.env` y ajustar las rutas de SUMO y los
+directorios del proyecto. Los valores se pueden cargar desde una sesión shell:
 
 ```bash
-python code/generate_base_files/main.py \
-  --config code/generate_base_files/config/base_files.json
+cp .env.sample .env
+set -a
+. ./.env
+set +a
 ```
 
-El proceso valida que la red tenga aristas externas con carriles, usa la
-semilla tanto para `randomTrips.py` como para `duarouter`, y asigna exactamente
-`round(n * cav_penetration)` vehículos como CAV. Los archivos se guardan junto a
-la red, en una carpeta `routes/<nombre-de-configuracion>/`, y el único
-manifiesto de cada configuración es
-`routes/<nombre-de-configuracion>/manifest.json`. Separar las configuraciones
-en carpetas evita sobrescribir rutas o manifiestos al utilizar más de un
-archivo JSON para la misma red.
+El archivo `.env` está excluido de Git. `.env.sample` contiene los valores
+predeterminados del proyecto.
 
-Para generar toda la matriz configurada de archivos base (una combinación por
-cada semilla y tasa CAV), ejecutar:
+## Organización del pipeline
+
+Las cinco etapas viven dentro de carpetas independientes bajo
+`code/pipeline/`. Cada etapa contiene su entry point y los módulos necesarios
+para ejecutarla:
+
+```text
+code/pipeline/
+├── generate_base_files/                 # Etapa 1
+├── generate_offline_artifacts/          # Etapa 2
+├── simulation/                          # Etapa 3
+├── generate_metrics/                    # Etapa 4
+└── generate_reports/                    # Etapa 5
+```
+
+Los módulos pueden ejecutarse directamente o mediante `PYTHONPATH=code`, por
+ejemplo:
 
 ```bash
-python code/generate_base_files/main.py \
-  --config code/generate_base_files/config/base_files.json
+PYTHONPATH=code python -m pipeline.simulation.main sample
+PYTHONPATH=code python -m pipeline.generate_metrics.main sample
+PYTHONPATH=code python -m pipeline.generate_reports.main sample
+```
+
+## Etapa 1: archivos base y demanda reproducible
+
+La Etapa 1 recibe únicamente el nombre de un experimento y lee su configuración
+desde `EXPERIMENT_DIR/<nombre>/manifest.json`. Genera una ruta `.rou.xml` por
+cada tasa de penetración CAV configurada, a partir de una única ruta neutral,
+y no crea ningún archivo JSON de salida.
+
+```bash
+EXPERIMENT_DIR="$PWD/experiments" \
+NETWORK_DIR="$PWD/source files/networks" \
+VTYPE_DIR="$PWD/source files/car distribution" \
+PYTHONPATH=code python code/pipeline/generate_base_files/main.py sample
+```
+
+Si `EXPERIMENT_DIR` no está definido, se utiliza `<raíz-del-repositorio>/experiments`.
+Los directorios predeterminados son:
+
+- Red: `NETWORK_DIR/<network>`
+- Tipos de vehículo: `VTYPE_DIR/<vtypes>`
+- Rutas: `EXPERIMENT_DIR/<experimento>/routes`
+
+El manifiesto de ejemplo es:
+
+```json
+{
+  "experiment": "sample",
+  "network": "grid5x5.net.xml",
+  "vtypes": "vtypes.add.xml",
+  "begin_s": 0,
+  "end_s": 3600,
+  "period_s": 1.5,
+  "routes_seed": 42,
+  "cav_penetrations": [0.0, 0.25, 0.5, 0.75, 1.0]
+}
+```
+
+- `network` y `vtypes` contienen solo nombres de archivo.
+- `begin_s`, `end_s` y `period_s` controlan la demanda de `randomTrips.py`.
+- `routes_seed` se usa para `randomTrips.py`, `duarouter` y la selección
+  reproducible de CAV y distribuciones HDV.
+- `cav_penetrations` puede contener tasas entre `0.0` y `1.0`.
+
+El proceso genera primero `routes.rou.xml`, sin atributos `type` ni definiciones
+vType, con una definición nombrada por cada ruta única. Después genera una
+archivo por penetración que contiene solamente vTypes y vehículos con
+`route="<route_id>"`. Cada penetración asigna exactamente
+`round(n * cav_penetration)` vehículos CAV. Las distribuciones humanas se leen
+directamente del archivo `.add.xml` indicado por `vtypes`. Los archivos de
+penetración no repiten las listas de aristas de las rutas.
+
+Al ejecutar SUMO, ambos archivos se pasan como rutas:
+
+```text
+--route-files routes.rou.xml,penetration_25.rou.xml
 ```
 
 La estructura resultante es:
 
 ```text
-code/networks/synthetic/
-├── grid5x5.net.xml
-└── routes/
-    └── base_files/
-        ├── seed42_cav00.rou.xml
-        ├── seed42_cav25.rou.xml
-        ├── ...
-        └── manifest.json
+experiments/sample/routes/
+├── routes.rou.xml
+├── penetration_0.rou.xml
+├── penetration_25.rou.xml
+├── penetration_50.rou.xml
+├── penetration_75.rou.xml
+└── penetration_100.rou.xml
 ```
+
+`code/tools/generate_vtypes.py` contiene una
+utilidad de la Etapa 1 para
+generar el archivo `.add.xml` de distribuciones humanas usado por la Etapa 1.
+No genera ni modifica los `.rou.xml`.
+
+```bash
+python code/tools/generate_vtypes.py \
+  code/dataset_analysis/pNeuma/sumo_params.csv \
+  "source files/car distribution/vtypes.add.xml" \
+  --vehicle-type "Car=100" \
+  --seed 42
+```
+
+El resultado incluye 50 muestras por distribución y guarda reproduciblemente,
+dentro de un comentario XML, la herramienta que lo creó, la seed, el CSV de
+entrada y los porcentajes de tipos solicitados.
+
+Internamente, Stage 1 está dividido en dos módulos:
+
+- [`code/pipeline/generate_base_files/generate_routes.py`](code/pipeline/generate_base_files/generate_routes.py)
+  genera la red de rutas compartida y valida las aristas.
+- [`code/pipeline/generate_base_files/generate_penetrations.py`](code/pipeline/generate_base_files/generate_penetrations.py)
+  asigna CAV/HDV y genera un archivo por tasa de penetración.
 
 ## Etapa 2: generación offline de artefactos
 
-La Etapa 2 se ejecuta con una configuración independiente de los archivos
-base:
-[`code/generate_offline_artifacts/config/offline_artifacts.json`](code/generate_offline_artifacts/config/offline_artifacts.json).
-Esta configuración referencia la red y una carpeta de rutas producida por la
-Etapa 1 mediante su `manifest.json`, y define una lista de experimentos. Cada
-experimento referencia un único escenario base y puede definir sus propios
-parámetros de simulación, incidente, detectores y subgrafo. La red
-correspondiente se obtiene de la entrada del manifiesto; no se repite en esta
-configuración.
+La Etapa 2 recibe únicamente el nombre del experimento y lee todos los valores
+desde `EXPERIMENT_DIR/<nombre>/manifest.json`. La red se resuelve desde
+`NETWORK_DIR/<network>` y las rutas desde
+`EXPERIMENT_DIR/<nombre>/routes/`.
 
 ```bash
-python code/generate_offline_artifacts/main.py \
-  --config code/generate_offline_artifacts/config/offline_artifacts.json
+EXPERIMENT_DIR="$PWD/experiments" \
+NETWORK_DIR="$PWD/source files/networks" \
+PYTHONPATH=code python code/pipeline/generate_offline_artifacts/main.py sample
 ```
 
-Todos los experimentos se almacenan en una carpeta común. Cada experimento
-contiene:
+Los campos adicionales del manifiesto son `incident`, `detectors` y `subgraph`.
+Los valores raíz `begin_s` y `end_s` definen también la ventana temporal de la
+simulación; no se mantiene un bloque `simulation` duplicado. La Etapa 2 genera
+los artefactos generales una sola vez y valida
+que exista el archivo de rutas de cada tasa de penetración:
 
 ```text
 experiments/<experimento>/
-├── manifest.json
-├── <experimento>.sumocfg
+├── routes/
+│   ├── routes.rou.xml
+│   └── penetration_<rate>.rou.xml
 ├── artifacts/
 │   ├── graph.graphml
 │   ├── subgraph.graphml
 │   └── detectors.add.xml
 ```
 
-La carpeta común se configura mediante `output_directory`. La Etapa 2 crea
-únicamente los artefactos necesarios para las etapas siguientes. Las salidas de
-simulación, métricas y resultados comparativos se crearán en sus respectivas
-etapas. No se genera un manifiesto global: cada experimento tiene su propio
-`manifest.json`. La etapa reutiliza la demanda concreta del escenario para
-ponderar el grafo dual y conserva los parámetros del incidente en el manifiesto.
+`graph.graphml`, `subgraph.graphml` y `detectors.add.xml` son generales al
+experimento. Esta etapa no genera archivos `.sumocfg` ni un manifiesto de salida.
 
-El `.sumocfg` referencia el `.net.xml` y el `.rou.xml` resueltos desde el
-manifiesto de archivos base, además de los detectores E2 generados. Los
-parámetros del incidente se mantienen para que la Etapa 3 los aplique mediante
-TraCI y `IncidentManager`.
+Los parámetros del incidente se mantienen en el manifiesto para que la Etapa 3
+los aplique mediante TraCI y `IncidentManager`.
 
 El incidente no se genera como un archivo adicional de SUMO. Durante la
 simulación se crea y controla dinámicamente mediante
-[`IncidentManager`](code/simulation/incident_manager.py), que agrega el
+[`IncidentManager`](code/pipeline/simulation/incident_manager.py), que agrega el
 vehículo-obstrucción por TraCI, inicia la obstrucción y libera el carril al
 finalizar el intervalo configurado.
 
@@ -113,13 +196,13 @@ muestran únicamente el incidente o también el estado de ocupación:
 
 ```bash
 # Solo marcar el incidente
-SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.simulator \
-  --manifest experiments/incident_a2b2/manifest.json \
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m pipeline.simulation.main \
+  incident_a2b2 \
   --strategy m0
 
 # Marcar el incidente y mostrar la ocupación
-SUMO_BINARY=sumo-gui PYTHONPATH=code python -m simulation.simulator \
-  --manifest experiments/incident_a2b2/manifest.json \
+SUMO_BINARY=sumo-gui PYTHONPATH=code python -m pipeline.simulation.main \
+  incident_a2b2 \
   --strategy m0 \
   --gui-overlay
 ```
@@ -129,45 +212,85 @@ ejecuciones batch o sin entorno gráfico.
 
 ## Etapa 3: ejecución de simulaciones
 
-La simulación recibe el manifiesto de un experimento generado por la Etapa 2
-y una estrategia (`m0` a `m3`):
+La Etapa 3 recibe únicamente el nombre del experimento. Construye una
+configuración SUMO temporal a partir del manifiesto, la red, las rutas y los
+detectores; no genera ningún archivo `.sumocfg` persistente. La penetración
+utilizada se selecciona desde `cav_penetrations` en el manifiesto.
+La resolución temporal de SUMO es común a todos los experimentos y está
+definida por `DEFAULT_STEP_LENGTH_S = 0.1` en
+[`code/pipeline/simulation/simulator.py`](code/pipeline/simulation/simulator.py).
 
 ```bash
-cd code
-python3 -m simulation.simulator \
-  --manifest ../experiments/incident_a2b2/manifest.json \
-  --strategy m0
+PYTHONPATH=code python -m pipeline.simulation.main sample
 ```
 
-La ejecución lee del manifiesto el `.sumocfg`, la configuración del incidente
-y los directorios del experimento. Las salidas crudas se guardan en
-`output/<estrategia>/`. El cálculo de métricas pertenece a una etapa posterior
-y no se ejecuta durante esta etapa.
+Sin flags se ejecutan todas las combinaciones de penetración y estrategia.
+Para ejecutar una sola estrategia en todas las penetraciones:
+
+```bash
+PYTHONPATH=code python -m pipeline.simulation.main sample --strategy m0
+```
+
+Para ejecutar una única penetración:
+
+```bash
+PYTHONPATH=code python -m pipeline.simulation.main sample --penetration 0.25
+```
+
+El manifiesto define las seeds de simulación en `simulation_seeds`. Sin
+`--seed` se ejecutan todas; con esa flag se ejecuta únicamente la seed indicada.
+La salida queda ordenada como
+`output/p{penetración}/m{estrategia}/seed_{seed}/`, por ejemplo
+`output/p25/m1/seed_1/`.
+La estrategia `m0` es la línea base sin CAV y se ejecuta una única vez en
+`output/p0/m0/`. Las estrategias `m1`, `m2` y `m3` se ejecutan únicamente para
+penetraciones mayores que cero. Por eso `--penetration 0` no está permitido.
+La ejecución es secuencial por defecto. Para ejecutar simulaciones en procesos
+independientes se puede indicar un límite de workers:
+
+```bash
+PYTHONPATH=code python -m pipeline.simulation.main sample --workers 4
+```
+
+Cada proceso tiene su propia conexión TraCI y su propio proceso SUMO. No se
+debe combinar `--workers` mayor que uno con `--gui-overlay`.
+
+La ejecución lee del manifiesto la configuración del incidente y los directorios
+del experimento. Las salidas crudas se guardan por penetración y estrategia.
+El cálculo de métricas pertenece a una etapa posterior y no se ejecuta durante
+esta etapa.
 
 ## Etapa 4: extracción y procesamiento de métricas
 
-La Etapa 4 lee el manifiesto del experimento y procesa las salidas crudas de
-las estrategias configuradas. La configuración y los módulos de esta etapa se
-encuentran en [`code/metrics/`](code/metrics/), con la configuración en
-[`code/metrics/config/metrics.json`](code/metrics/config/metrics.json).
-El grafo se toma desde `artifacts/graph.graphml`, mientras que los archivos
-`tripinfo.xml`, `fcd_output.xml` y `e2_output.xml` se leen desde
-`output/<estrategia>/`.
+La Etapa 4 recibe el nombre del experimento y agrega las seeds configuradas
+para cada combinación de penetración y estrategia. El grafo se toma desde
+`artifacts/graph.graphml`, mientras que los archivos `tripinfo.xml`,
+`fcd_output.xml` y `e2_output.xml` se leen desde
+`output/p{penetración}/m{estrategia}/seed_{seed}/`.
 
 ```bash
-python code/metrics/main.py \
-  --config code/metrics/config/metrics.json
+PYTHONPATH=code python code/pipeline/generate_metrics/main.py sample
 ```
+
+Para procesar una sola combinación:
+
+```bash
+PYTHONPATH=code python code/pipeline/generate_metrics/main.py sample \
+  --penetration 0.25 \
+  --strategy m1
+```
+
+Sin `--penetration` se procesan todas las penetraciones; sin `--strategy` se
+procesan todas las estrategias válidas. `m0` se procesa únicamente en `p0` y no
+acepta `--penetration`.
 
 Los resultados se guardan por estrategia en:
 
 ```text
-<experimento>/metrics/
-├── m0/
-│   ├── metrics.json
-│   ├── metrics_stability_by_step.csv
-│   └── metrics_congestion_<zona>_by_interval.csv
-└── ...
+<experimento>/metrics/p<penetración>/m<estrategia>/
+├── metrics.json
+├── metrics_stability_by_step.csv
+└── metrics_congestion_<zona>_by_interval.csv
 ```
 
 Si una estrategia todavía no tiene sus salidas crudas, la etapa falla
@@ -176,35 +299,26 @@ durante la Etapa 3.
 
 ## Etapa 5: visualización y exportación de métricas
 
-La Etapa 5 genera visualizaciones comparables para una o más estrategias (`m0`,
-`m1`, etc.) a partir de los archivos exportados por la Etapa 4. La configuración
-de ejemplo está en
-[`code/metrics/config/visualization.json`](code/metrics/config/visualization.json):
+La Etapa 5 genera visualizaciones SVG comparables para el experimento a partir
+de los resultados agregados por la Etapa 4:
 
 ```bash
-python code/metrics/visualization/main.py \
-  --config code/metrics/config/visualization.json
+PYTHONPATH=code python -m pipeline.generate_reports.main sample
 ```
 
-También se puede ejecutar como módulo desde `code`:
+Los resultados se guardan únicamente en formato SVG:
 
-```bash
-python -m metrics.visualization \
-  --config metrics/config/visualization.json
+```text
+experiments/<experimento>/results/
+├── report.html
+└── graphics/
+    └── <nombre>.svg
 ```
 
-La lista opcional `strategies` define las carpetas que se comparan. Si se omite,
-se detectan automáticamente todas las estrategias que contienen un
-`metrics.json`. Si no se especifica `formats`, se generan imágenes PNG.
-También se pueden solicitar `svg` y `pdf`. `plots` acepta `summary`,
-`stability` y `congestion`. Además de las imágenes individuales, siempre se
-genera un único `report.html` autocontenido con todos los gráficos embebidos.
-Las figuras, el reporte y un manifiesto de exportación se guardan en
-`output_directory`.
-
-When the experiment `manifest.json` is next to the metrics directory, the
-visualization automatically reads `incident.begin_s` and `incident.end_s`.
-Stability and congestion plots then shade the pre-incident, incident, and
-post-incident stages and draw boundary lines. If no manifest is available, the
-boundaries can be supplied explicitly with `incident_start_s` and
-`incident_end_s` in the visualization configuration.
+El reporte HTML referencia los gráficos SVG. No se generan PNG, PDF, CSV ni
+manifiestos de visualización.
+Antes de generar resultados, Stage 5 verifica que existan los JSON y CSV
+agregados de todas las combinaciones declaradas por el manifiesto:
+`p0/m0` y cada penetración positiva con `m1`, `m2` y `m3`. También exige los
+CSV de las cuatro zonas de congestión. Si falta algún archivo, termina antes
+de modificar los gráficos o el reporte.
