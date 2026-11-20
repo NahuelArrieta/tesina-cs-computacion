@@ -51,6 +51,35 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(csv_file))
 
 
+def _moving_average(
+    values: list[float],
+    xs: list[float],
+    window_s: float,
+) -> list[float]:
+    """Return a centered moving average using a time-based window."""
+    if len(values) < 2 or window_s <= 0:
+        return values
+    step_s = (xs[-1] - xs[0]) / (len(xs) - 1)
+    if step_s <= 0:
+        return values
+    window_samples = max(1, round(window_s / step_s))
+    if window_samples % 2 == 0:
+        window_samples += 1
+    if window_samples == 1:
+        return values
+
+    half_window = window_samples // 2
+    prefix = [0.0]
+    for value in values:
+        prefix.append(prefix[-1] + value)
+    smoothed: list[float] = []
+    for index in range(len(values)):
+        start = max(0, index - half_window)
+        end = min(len(values), index + half_window + 1)
+        smoothed.append((prefix[end] - prefix[start]) / (end - start))
+    return smoothed
+
+
 def _draw_stage_boundaries(axis: plt.Axes, incident_window: StageWindows) -> None:
     if incident_window is None:
         return
@@ -428,6 +457,7 @@ def _plot_timeseries(
     dpi: int,
     incident_window: StageWindows,
     filename_prefix: str,
+    smoothing_window_s: float | None = None,
 ) -> list[Path]:
     paths = []
     penetrations = sorted(
@@ -465,6 +495,9 @@ def _plot_timeseries(
                 float(row.get(std_column, 0.0))
                 for row in rows
             ]
+            if smoothing_window_s is not None:
+                ys = _moving_average(ys, xs, smoothing_window_s)
+                stds = _moving_average(stds, xs, smoothing_window_s)
             if strategy == "m0" and penetration > 0:
                 axis.plot(
                     xs,
@@ -611,6 +644,7 @@ def visualize_metrics(
             dpi,
             incident_window,
             "metrics_stability_by_step",
+            smoothing_window_s=60.0,
         )
     )
 
