@@ -5,6 +5,8 @@ import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import traci
+
+from strategies.main import get_strategy
 try:
     from .incident_manager import IncidentManager
 except ImportError:
@@ -29,6 +31,7 @@ def run_simulation(
     visualization_interval_s=10.0,
     show_occupancy_overlay=False,
     seed=None,
+    strategy=None,
 ):
     sumo_binary = os.environ.get("SUMO_BINARY", "sumo")
 
@@ -90,6 +93,10 @@ def run_simulation(
                 incident_started = True
             if current_time >= incident_end and incident.is_active:
                 incident.end()
+
+            if strategy is not None:
+                strategy.execute()
+
             traci.simulationStep()
     finally:
         if incident.is_active:
@@ -209,6 +216,8 @@ def run_from_manifest(
             f"Running simulation for strategy '{strategy}', penetration {penetration:g}, seed {seed}..."
         )
 
+        strategy = get_strategy(strategy_name=strategy, config={})
+
         run_simulation(
             duration=duration,
             incident_edge=str(incident["edge"]),
@@ -225,6 +234,7 @@ def run_from_manifest(
             visualization_interval_s=visualization_interval_s,
             show_occupancy_overlay=visualization_mode == "gui-overlay",
             seed=seed,
+            strategy=strategy
         )
     finally:
         temporary_detector.close()
