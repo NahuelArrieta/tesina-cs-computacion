@@ -10,7 +10,7 @@ import json
 import math
 import mimetypes
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import matplotlib
 
@@ -22,6 +22,7 @@ matplotlib.rcParams["svg.hashsalt"] = "reproducible"
 MetricData = dict[str, Any]
 StageWindows = tuple[float, float] | None
 
+## Constants and configuration
 BASELINE_STRATEGY = "m0"
 ACTIVE_STRATEGIES = ("m1", "m2", "m3")
 ALL_STRATEGIES = (BASELINE_STRATEGY, *ACTIVE_STRATEGIES)
@@ -41,24 +42,35 @@ ZONE_LABELS = {
     "other_zones": "Other zones",
 }
 
-METRIC_LABELS = {
-    "total_travel_time_s": "Total travel time",
-    "mean_travel_time_s": "Mean travel time",
-    "mean_delay_s": "Mean delay",
-    "total_delay_s": "Total delay",
-    "throughput_veh_hour": "Throughput",
-    "mean_speed_mps": "Mean speed",
-    "completed_vehicles": "Completed vehicles",
-    "mean_queue_length_m": "Mean queue length",
-    "max_queue_length_m": "Maximum queue length",
-    "mean_congested_segments": "Mean congested segments",
-    "max_congested_segments": "Maximum congested segments",
-    "mean_speed_std": "Speed standard deviation",
-    "mean_accel_var": "Acceleration variance",
-    "hard_brake_events": "Hard-braking events",
-    "hard_brake_ratio": "Hard-braking ratio",
-    "mean_abs_jerk_mps3": "Mean absolute jerk",
-    "max_abs_jerk_mps3": "Maximum absolute jerk",
+
+@dataclass(frozen=True)
+class MetricSpec:
+    label: str
+    unit: str | None = None
+
+    @property
+    def ylabel(self) -> str:
+        return f"{self.label} ({self.unit})" if self.unit else self.label
+
+
+METRICS: dict[str, MetricSpec] = {
+    "total_travel_time_s": MetricSpec("Total travel time", "s"),
+    "mean_travel_time_s": MetricSpec("Mean travel time", "s"),
+    "mean_delay_s": MetricSpec("Mean delay", "s"),
+    "total_delay_s": MetricSpec("Total delay", "s"),
+    "throughput_veh_hour": MetricSpec("Throughput", "veh/h"),
+    "mean_speed_mps": MetricSpec("Mean speed", "m/s"),
+    "completed_vehicles": MetricSpec("Completed vehicles"),
+    "mean_queue_length_m": MetricSpec("Mean queue length", "m"),
+    "max_queue_length_m": MetricSpec("Maximum queue length", "m"),
+    "mean_congested_segments": MetricSpec("Mean congested segments"),
+    "max_congested_segments": MetricSpec("Maximum congested segments"),
+    "mean_speed_std": MetricSpec("Speed standard deviation", "m/s"),
+    "mean_accel_var": MetricSpec("Acceleration variance", "m²/s⁴"),
+    "hard_brake_events": MetricSpec("Hard-braking events"),
+    "hard_brake_ratio": MetricSpec("Hard-braking ratio"),
+    "mean_abs_jerk_mps3": MetricSpec("Mean absolute jerk", "m/s³"),
+    "max_abs_jerk_mps3": MetricSpec("Maximum absolute jerk", "m/s³"),
 }
 
 EFFICIENCY_KEYS = (
@@ -68,16 +80,16 @@ EFFICIENCY_KEYS = (
     "mean_speed_mps",
 )
 
-CONGESTION_METRICS = (
-    ("mean_queue_length_m", "Mean queue length (m)"),
-    ("max_queue_length_m", "Maximum queue length (m)"),
-    ("mean_congested_segments", "Mean congested segments"),
-    ("max_congested_segments", "Maximum congested segments"),
+CONGESTION_KEYS = (
+    "mean_queue_length_m",
+    "max_queue_length_m",
+    "mean_congested_segments",
+    "max_congested_segments",
 )
 
-CONGESTION_TIMESERIES_METRICS = (
-    ("mean_queue_length_m", "Mean queue length over time", "Mean queue length (m)"),
-    ("max_queue_length_m", "Maximum queue length over time", "Maximum queue length (m)"),
+CONGESTION_TIMESERIES_KEYS = (
+    "mean_queue_length_m",
+    "max_queue_length_m",
 )
 
 STABILITY_KEYS = (
@@ -89,12 +101,33 @@ STABILITY_KEYS = (
     "max_abs_jerk_mps3",
 )
 
-STRATEGY_STYLES: dict[str, dict[str, Any]] = {
-    "m0": {"color": "#666666", "linestyle": ":", "linewidth": 1.6},
-    "m1": {"linestyle": "-", "marker": "o", "markersize": 7, "alpha": 0.9},
-    "m2": {"linestyle": "--", "marker": "s", "markersize": 6, "alpha": 0.9},
-    "m3": {"linestyle": "-.", "marker": "^", "markersize": 5, "alpha": 0.9},
-}
+
+@dataclass(frozen=True)
+class PlotTheme:
+    strategy_styles: Mapping[str, Mapping[str, Any]]
+    grid_alpha: float = 0.25
+    legend_loc: str = "outside lower center"
+    legend_max_cols: int = 4
+    layout_pad: Mapping[str, float] = None  # type: ignore[assignment]
+    save_pad_inches: float = 0.25
+
+    def __post_init__(self) -> None:
+        if self.layout_pad is None:
+            object.__setattr__(
+                self,
+                "layout_pad",
+                {"w_pad": 0.15, "h_pad": 0.15, "hspace": 0.12, "wspace": 0.08},
+            )
+
+
+THEME = PlotTheme(
+    strategy_styles={
+        "m0": {"color": "#666666", "linestyle": ":", "linewidth": 1.6},
+        "m1": {"linestyle": "-", "marker": "o", "markersize": 7, "alpha": 0.9},
+        "m2": {"linestyle": "--", "marker": "s", "markersize": 6, "alpha": 0.9},
+        "m3": {"linestyle": "-.", "marker": "^", "markersize": 5, "alpha": 0.9},
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -111,14 +144,14 @@ class PlotArtifact:
     is_grid: bool
 
 
+def _metric_spec(metric_name: str) -> MetricSpec:
+    return METRICS.get(metric_name, MetricSpec(metric_name.replace("_", " ").title()))
 
-def _human_metric_label(metric_name: str) -> str:
-    return METRIC_LABELS.get(metric_name, metric_name.replace("_", " ").title())
 
-
-def _human_zone_label(zone: str) -> str:
+def _zone_label(zone: str) -> str:
     return ZONE_LABELS.get(zone, zone.replace("_", " ").title())
 
+## Utility functions
 
 def _get_nested(mapping: Any, keys: Sequence[str]) -> Any:
     current = mapping
@@ -135,49 +168,7 @@ def _aggregate_value(value: Any) -> tuple[float, float]:
     return float(value), 0.0
 
 
-def _discover_penetrations(metrics_directory: Path, *, positive_only: bool = True) -> list[int]:
-    penetrations: list[int] = []
-    for path in metrics_directory.glob("p*"):
-        if not path.is_dir() or not path.name[1:].isdigit():
-            continue
-        value = int(path.name[1:])
-        if not positive_only or value > 0:
-            penetrations.append(value)
-    return sorted(penetrations)
-
-
-def _positive_penetrations(data: Mapping[tuple[int, str], MetricData]) -> list[int]:
-    return sorted({penetration for penetration, _ in data if penetration > 0})
-
-
-def _read_csv(path: Path) -> list[dict[str, str]]:
-    if not path.is_file():
-        raise FileNotFoundError(f"Time-series file not found: {path}")
-    with path.open(newline="", encoding="utf-8") as csv_file:
-        return list(csv.DictReader(csv_file))
-
-
-def _read_aggregated(metrics_directory: Path) -> dict[tuple[int, str], MetricData]:
-    data: dict[tuple[int, str], MetricData] = {}
-    for penetration in _discover_penetrations(metrics_directory, positive_only=False):
-        penetration_dir = metrics_directory / f"p{penetration}"
-        for strategy_dir in penetration_dir.iterdir():
-            if not strategy_dir.is_dir():
-                continue
-            metrics_file = strategy_dir / "metrics.json"
-            if metrics_file.is_file():
-                data[(penetration, strategy_dir.name)] = json.loads(
-                    metrics_file.read_text(encoding="utf-8")
-                )
-    return data
-
-
-def _moving_average(
-    values: list[float],
-    xs: list[float],
-    window_s: float,
-) -> list[float]:
-    """Return a centered moving average using a time-based window."""
+def _moving_average(values: list[float], xs: list[float], window_s: float) -> list[float]:
     if len(values) < 2 or window_s <= 0:
         return values
     step_s = (xs[-1] - xs[0]) / (len(xs) - 1)
@@ -189,103 +180,155 @@ def _moving_average(
     if window_samples == 1:
         return values
 
-    half_window = window_samples // 2
+    half = window_samples // 2
     prefix = [0.0]
-    for value in values:
-        prefix.append(prefix[-1] + value)
-
+    for v in values:
+        prefix.append(prefix[-1] + v)
     n = len(values)
     return [
-        (prefix[min(n, i + half_window + 1)] - prefix[max(0, i - half_window)])
-        / (min(n, i + half_window + 1) - max(0, i - half_window))
+        (prefix[min(n, i + half + 1)] - prefix[max(0, i - half)])
+        / (min(n, i + half + 1) - max(0, i - half))
         for i in range(n)
     ]
 
 
+class ExperimentStore:
+    """Encapsulates all reads from metrics_directory."""
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        self.aggregated = self._load_aggregated()
+        self.penetrations = sorted({p for p, _ in self.aggregated if p > 0})
+
+    def _discover_penetration_dirs(self, *, positive_only: bool) -> list[int]:
+        found = []
+        for path in self.root.glob("p*"):
+            if path.is_dir() and path.name[1:].isdigit():
+                val = int(path.name[1:])
+                if not positive_only or val > 0:
+                    found.append(val)
+        return sorted(found)
+
+    def _load_aggregated(self) -> dict[tuple[int, str], MetricData]:
+        data: dict[tuple[int, str], MetricData] = {}
+        for p in self._discover_penetration_dirs(positive_only=False):
+            for strategy_dir in (self.root / f"p{p}").iterdir():
+                metrics_file = strategy_dir / "metrics.json"
+                if strategy_dir.is_dir() and metrics_file.is_file():
+                    data[(p, strategy_dir.name)] = json.loads(
+                        metrics_file.read_text(encoding="utf-8")
+                    )
+        return data
+
+    def get_aggregate(
+        self, penetration: int, strategy: str, key_path: Sequence[str]
+    ) -> tuple[float, float] | None:
+        raw = _get_nested(self.aggregated.get((penetration, strategy)), key_path)
+        if raw is None:
+            return None
+        try:
+            return _aggregate_value(raw)
+        except (TypeError, ValueError):
+            return None
+
+    def get_samples(
+        self, penetration: int, strategy: str, key_path: Sequence[str]
+    ) -> list[float]:
+        raw = _get_nested(self.aggregated.get((penetration, strategy)), key_path)
+        samples = raw.get("values") if isinstance(raw, Mapping) else None
+        if not isinstance(samples, list) or not samples:
+            return []
+        try:
+            return [float(v) for v in samples]
+        except (TypeError, ValueError):
+            return []
+
+    def has_congestion_data(self) -> bool:
+        return any(
+            zone in values.get("congestion", {})
+            for values in self.aggregated.values()
+            for zone in CONGESTION_ZONE_ORDER
+        )
+
+    def discover_congestion_zones(self) -> list[str]:
+        prefix, suffix = "metrics_congestion_", "_by_interval.csv"
+        discovered = {
+            csv_file.name[len(prefix) : -len(suffix)]
+            for p in self._discover_penetration_dirs(positive_only=True)
+            for strategy_dir in (self.root / f"p{p}").iterdir()
+            if strategy_dir.is_dir()
+            for csv_file in strategy_dir.glob(f"{prefix}*{suffix}")
+        }
+        return [z for z in CONGESTION_ZONE_ORDER if z in discovered]
+
+    def read_csv(self, penetration: int, strategy: str, filename: str) -> list[dict[str, str]]:
+        source_p = 0 if strategy == BASELINE_STRATEGY else penetration
+        path = self.root / f"p{source_p}" / strategy / filename
+        if not path.is_file():
+            return []
+        with path.open(newline="", encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+
+
+## Layout and styling helpers
 def _create_grid(
     n_items: int,
     *,
     ncols: int = 2,
     figsize_per_cell: tuple[float, float] = (6.0, 4.0),
-    sharey: bool = False
+    sharey: bool = False,
 ) -> tuple[plt.Figure, list[plt.Axes]]:
     nrows = max(1, math.ceil(n_items / ncols))
-    figsize = (figsize_per_cell[0] * ncols, figsize_per_cell[1] * nrows)
     figure, axes = plt.subplots(
         nrows,
         ncols,
-        figsize=figsize,
-        constrained_layout=True,
+        figsize=(figsize_per_cell[0] * ncols, figsize_per_cell[1] * nrows),
+        layout="constrained",
         squeeze=False,
         sharey=sharey,
     )
+    engine = figure.get_layout_engine()
+    if engine is not None:
+        engine.set(**THEME.layout_pad)
+
     flat_axes = list(axes.flat)
     for axis in flat_axes[n_items:]:
         axis.set_visible(False)
     return figure, flat_axes[:n_items]
 
 
+def _style_axis(
+    axis: plt.Axes,
+    *,
+    title: str,
+    xlabel: str,
+    ylabel: str | None = None,
+    xticks: Sequence[int] | None = None,
+    grid_axis: str = "y",
+) -> None:
+    axis.set_title(title)
+    axis.set_xlabel(xlabel)
+    if ylabel:
+        axis.set_ylabel(ylabel)
+    if xticks is not None:
+        axis.set_xticks(xticks)
+    axis.grid(axis=grid_axis, alpha=THEME.grid_alpha)
+
+
 def _draw_stage_boundaries(axis: plt.Axes, incident_window: StageWindows) -> None:
     if incident_window is None:
         return
-    incident_start_s, incident_end_s = incident_window
+    start_s, end_s = incident_window
     x_min, x_max = axis.get_xlim()
     stages = (
-        (x_min, incident_start_s, "#4c78a8", 0.10, "Pre-incident"),
-        (incident_start_s, incident_end_s, "#e45756", 0.12, "Incident"),
-        (incident_end_s, x_max, "#59a14f", 0.10, "Post-incident"),
+        (x_min, start_s, "#4c78a8", 0.10, "Pre-incident"),
+        (start_s, end_s, "#e45756", 0.12, "Incident"),
+        (end_s, x_max, "#59a14f", 0.10, "Post-incident"),
     )
-    for start, end, color, alpha, label in stages:
-        axis.axvspan(start, end, color=color, alpha=alpha, label=label, zorder=0)
-    axis.axvline(incident_start_s, color="#b22222", linestyle="--", linewidth=1.2)
-    axis.axvline(incident_end_s, color="#b22222", linestyle="--", linewidth=1.2)
-
-
-def _plot_penetration_curves(
-    axis: plt.Axes,
-    data: Mapping[tuple[int, str], MetricData],
-    penetrations: Sequence[int],
-    key_path: Sequence[str],
-    *,
-    capsize: int = 3,
-) -> bool:
-    """Plot active strategies with error bars and M0 baseline. Returns True if any data was plotted."""
-    has_data = False
-    for strategy in ACTIVE_STRATEGIES:
-        xs, ys, errors = [], [], []
-        for penetration in penetrations:
-            raw = _get_nested(data.get((penetration, strategy)), key_path)
-            if raw is None:
-                continue
-            try:
-                mean, std = _aggregate_value(raw)
-            except (TypeError, ValueError):
-                continue
-            xs.append(penetration)
-            ys.append(mean)
-            errors.append(std)
-        if xs:
-            style = STRATEGY_STYLES.get(strategy, {})
-            axis.errorbar(
-                xs,
-                ys,
-                yerr=errors,
-                capsize=capsize,
-                label=strategy.upper(),
-                **style,
-            )
-            has_data = True
-
-    baseline_raw = _get_nested(data.get((0, BASELINE_STRATEGY)), key_path)
-    if baseline_raw is not None:
-        try:
-            mean, _ = _aggregate_value(baseline_raw)
-            axis.axhline(mean, color="#444", linestyle=":", label="M0")
-            has_data = True
-        except (TypeError, ValueError):
-            pass
-
-    return has_data
+    for s, e, color, alpha, label in stages:
+        axis.axvspan(s, e, color=color, alpha=alpha, label=label, zorder=0)
+    axis.axvline(start_s, color="#b22222", linestyle="--", linewidth=1.2)
+    axis.axvline(end_s, color="#b22222", linestyle="--", linewidth=1.2)
 
 
 def _add_shared_legend(figure: plt.Figure, axis: plt.Axes) -> None:
@@ -294,8 +337,8 @@ def _add_shared_legend(figure: plt.Figure, axis: plt.Axes) -> None:
         figure.legend(
             handles,
             labels,
-            loc="outside lower center",
-            ncol=min(len(handles), 4),
+            loc=THEME.legend_loc,
+            ncol=min(len(handles), THEME.legend_max_cols),
         )
 
 
@@ -308,312 +351,230 @@ def _save_figure(
     is_grid: bool,
 ) -> list[PlotArtifact]:
     artifacts: list[PlotArtifact] = []
+    extra_artists = [*figure.legends, *figure.texts]
     try:
-        for file_format in config.formats:
-            if file_format != "svg":
-                raise ValueError(f"Unsupported output format: {file_format}")
-            path = config.output_directory / f"{stem}.{file_format}"
-            figure.savefig(path, dpi=config.dpi, bbox_inches="tight", metadata={"Date": None})
+        for fmt in config.formats:
+            if fmt != "svg":
+                raise ValueError(f"Unsupported output format: {fmt}")
+            path = config.output_directory / f"{stem}.{fmt}"
+            figure.savefig(
+                path,
+                dpi=config.dpi,
+                bbox_inches="tight",
+                bbox_extra_artists=extra_artists,
+                pad_inches=THEME.save_pad_inches,
+                metadata={"Date": None},
+            )
             artifacts.append(PlotArtifact(path=path, title=title, is_grid=is_grid))
     finally:
         plt.close(figure)
     return artifacts
 
 
-def _plot_scalar_by_penetration(
-    data: Mapping[tuple[int, str], MetricData],
-    section: str,
-    leaf_path: tuple[str, ...],
+## Generic plot constructors
+
+def _draw_penetration_curves(
+    axis: plt.Axes,
+    store: ExperimentStore,
+    key_path: Sequence[str],
+    *,
+    capsize: int = 3,
+) -> bool:
+    has_data = False
+    for strategy in ACTIVE_STRATEGIES:
+        xs, ys, errs = [], [], []
+        for p in store.penetrations:
+            agg = store.get_aggregate(p, strategy, key_path)
+            if agg is not None:
+                xs.append(p)
+                ys.append(agg[0])
+                errs.append(agg[1])
+        if xs:
+            axis.errorbar(
+                xs,
+                ys,
+                yerr=errs,
+                capsize=capsize,
+                label=strategy.upper(),
+                **THEME.strategy_styles.get(strategy, {}),
+            )
+            has_data = True
+
+    baseline = store.get_aggregate(0, BASELINE_STRATEGY, key_path)
+    if baseline is not None:
+        axis.axhline(
+            baseline[0],
+            label="M0",
+            **THEME.strategy_styles[BASELINE_STRATEGY],
+        )
+        has_data = True
+    return has_data
+
+
+def _plot_penetration_grid(
+    store: ExperimentStore,
+    panels: Sequence[tuple[str, Sequence[str]]],
+    *,
     title: str,
     ylabel: str,
+    stem: str,
     config: PlotConfig,
+    ncols: int = 2,
+    figsize_per_cell: tuple[float, float] = (6.0, 4.0),
+    sharey: bool = False,
 ) -> list[PlotArtifact]:
-    penetrations = _positive_penetrations(data)
-    if not penetrations:
+    """Generic builder for 1-panel or multi-panel penetration curve plots."""
+    if not store.penetrations or not panels:
         return []
 
-    figure, axis = plt.subplots(figsize=(10, 6), constrained_layout=True)
-    has_data = _plot_penetration_curves(
-        axis, data, penetrations, (section, *leaf_path), capsize=4
+    is_grid = len(panels) > 1
+    figure, axes = _create_grid(
+        len(panels),
+        ncols=ncols if is_grid else 1,
+        figsize_per_cell=figsize_per_cell if is_grid else (10.0, 6.0),
+        sharey=sharey,
     )
-    if not has_data:
+
+    any_data = False
+    for idx, (axis, (panel_title, key_path)) in enumerate(zip(axes, panels)):
+        if _draw_penetration_curves(axis, store, key_path, capsize=3 if is_grid else 4):
+            any_data = True
+        show_ylabel = (not sharey) or (idx % ncols == 0)
+        _style_axis(
+            axis,
+            title=panel_title,
+            xlabel="CAV penetration (%)",
+            ylabel=ylabel if show_ylabel else None,
+            xticks=store.penetrations,
+        )
+
+    if not any_data:
         plt.close(figure)
         return []
 
-    axis.set_title(title)
-    axis.set_xlabel("CAV penetration (%)")
-    axis.set_ylabel(ylabel)
-    axis.set_xticks(penetrations)
-    axis.grid(axis="y", alpha=0.25)
-    axis.legend()
-    return _save_figure(
-        figure,
-        config,
-        f"{section}_{'_'.join(leaf_path)}",
-        title,
-        is_grid=False,
-    )
+    if is_grid:
+        _add_shared_legend(figure, axes[0])
+        figure.suptitle(title)
+    else:
+        axes[0].legend()
+
+    return _save_figure(figure, config, stem, title, is_grid=is_grid)
 
 
-def _plot_seed_boxplots(
-    data: Mapping[tuple[int, str], MetricData],
+def _plot_boxplots_by_penetration(
+    store: ExperimentStore,
     section: str,
-    leaf_path: tuple[str, ...],
-    title: str,
+    metric_name: str,
     config: PlotConfig,
 ) -> list[PlotArtifact]:
-    penetrations = _positive_penetrations(data)
-    if not penetrations:
+    if not store.penetrations:
         return []
 
-    figure, axes = _create_grid(len(penetrations), ncols=2, figsize_per_cell=(6.0, 4.0))
-    key_path = (section, *leaf_path)
+    spec = _metric_spec(metric_name)
+    ncols = 2
+    figure, axes = _create_grid(
+        len(store.penetrations),
+        ncols=ncols,
+        figsize_per_cell=(6.0, 4.0),
+        sharey=True,
+    )
+    key_path = (section, metric_name)
 
-    for axis, penetration in zip(axes, penetrations):
-        box_data: list[list[float]] = []
-        labels: list[str] = []
+    for idx, (axis, p) in enumerate(zip(axes, store.penetrations)):
+        box_data, labels = [], []
         for strategy in ALL_STRATEGIES:
-            source_penetration = 0 if strategy == BASELINE_STRATEGY else penetration
-            raw = _get_nested(data.get((source_penetration, strategy)), key_path)
-            samples = raw.get("values") if isinstance(raw, Mapping) else None
-            if isinstance(samples, list) and samples:
-                try:
-                    box_data.append([float(v) for v in samples])
-                    labels.append(strategy.upper())
-                except (TypeError, ValueError):
-                    continue
+            source_p = 0 if strategy == BASELINE_STRATEGY else p
+            samples = store.get_samples(source_p, strategy, key_path)
+            if samples:
+                box_data.append(samples)
+                labels.append(strategy.upper())
         if box_data:
             axis.boxplot(box_data, tick_labels=labels)
-        axis.set_xlabel(f"{penetration}% CAV")
-        axis.grid(axis="y", alpha=0.25)
-
-    figure.suptitle(f"{title} across penetration levels")
-    return _save_figure(
-        figure,
-        config,
-        f"boxplot_{section}_{'_'.join(leaf_path)}",
-        f"{title} distribution across penetration levels",
-        is_grid=True,
-    )
-
-
-def _plot_stability_by_phase(
-    data: Mapping[tuple[int, str], MetricData],
-    metric_name: str,
-    config: PlotConfig,
-) -> list[PlotArtifact]:
-    penetrations = _positive_penetrations(data)
-    if not penetrations:
-        return []
-
-    figure, axes = _create_grid(
-        len(STABILITY_PHASES), ncols=3, figsize_per_cell=(5.0, 5.0)
-    )
-    metric_label = _human_metric_label(metric_name)
-
-    for axis, phase in zip(axes, STABILITY_PHASES):
-        _plot_penetration_curves(
-            axis, data, penetrations, ("stability", phase, metric_name)
+        _style_axis(
+            axis,
+            title=f"{p}% CAV",
+            xlabel="Strategy",
+            ylabel=spec.ylabel if idx % ncols == 0 else None,
         )
-        axis.set_title(phase.replace("_", " ").title())
-        axis.set_xlabel("CAV penetration (%)")
-        axis.set_xticks(penetrations)
-        axis.grid(axis="y", alpha=0.25)
 
-    axes[0].set_ylabel(metric_label)
-    _add_shared_legend(figure, axes[0])
-    title = f"{metric_label} by incident phase"
-    figure.suptitle(title)
+    figure.suptitle(f"{spec.label} across penetration levels")
     return _save_figure(
         figure,
         config,
-        f"stability_{metric_name}_by_phase",
-        title,
+        f"boxplot_{section}_{metric_name}",
+        f"{spec.label} distribution across penetration levels",
         is_grid=True,
     )
 
 
-def _plot_congestion_metric_grid(
-    data: Mapping[tuple[int, str], MetricData],
-    metric_name: str,
-    ylabel: str,
-    config: PlotConfig,
-) -> list[PlotArtifact]:
-    penetrations = _positive_penetrations(data)
-    if not penetrations:
-        return []
-
-    figure, axes = _create_grid(
-        len(CONGESTION_ZONE_ORDER), ncols=2, figsize_per_cell=(6.0, 4.0)
-    )
-    for axis, zone in zip(axes, CONGESTION_ZONE_ORDER):
-        _plot_penetration_curves(
-            axis, data, penetrations, ("congestion", zone, metric_name)
-        )
-        axis.set_title(_human_zone_label(zone))
-        axis.set_xlabel("CAV penetration (%)")
-        axis.set_ylabel(ylabel)
-        axis.set_xticks(penetrations)
-        axis.grid(axis="y", alpha=0.25)
-
-    _add_shared_legend(figure, axes[0])
-    title = f"{_human_metric_label(metric_name)} by congestion zone"
-    figure.suptitle(title)
-    return _save_figure(
-        figure,
-        config,
-        f"congestion_{metric_name}_by_zone",
-        title,
-        is_grid=True,
-    )
-
-
-def _plot_speed_timeseries_grid(
-    metrics_directory: Path,
-    config: PlotConfig,
-    incident_window: StageWindows,
-) -> list[PlotArtifact]:
-    penetrations = _discover_penetrations(metrics_directory, positive_only=True)
-    if not penetrations:
-        return []
-
-    figure, axes = _create_grid(
-        len(penetrations), ncols=2, figsize_per_cell=(6.5, 4.0)
-    )
-    for axis, penetration in zip(axes, penetrations):
-        for strategy in ALL_STRATEGIES:
-            source_penetration = 0 if strategy == BASELINE_STRATEGY else penetration
-            csv_file = (
-                metrics_directory
-                / f"p{source_penetration}"
-                / strategy
-                / "metrics_stability_by_step.csv"
-            )
-            if not csv_file.is_file():
-                continue
-            rows = _read_csv(csv_file)
-            if not rows:
-                continue
-
-            xs = [float(row["time"]) for row in rows]
-            ys = _moving_average(
-                [float(row["mean_speed_mps"]) for row in rows], xs, 60.0
-            )
-            stds = _moving_average(
-                [float(row.get("mean_speed_mps_std", 0.0)) for row in rows],
-                xs,
-                60.0,
-            )
-
-            style = STRATEGY_STYLES.get(strategy, {})
-            if strategy == BASELINE_STRATEGY:
-                axis.plot(xs, ys, label="M0 (baseline)", **style)
-            else:
-                axis.plot(
-                    xs,
-                    ys,
-                    label=strategy.upper(),
-                    linestyle=style.get("linestyle", "-"),
-                    alpha=style.get("alpha", 0.9),
-                )
-
-        _draw_stage_boundaries(axis, incident_window)
-        axis.set_title(f"{penetration}% CAV")
-        axis.set_xlabel("Time (s)")
-        axis.set_ylabel("Mean speed (m/s)")
-        axis.grid(alpha=0.25)
-
-    _add_shared_legend(figure, axes[0])
-    title = "Mean speed over time - 60 s moving average"
-    figure.suptitle(title)
-    return _save_figure(
-        figure,
-        config,
-        "metrics_mean_speed_by_penetration",
-        title,
-        is_grid=True,
-    )
-
-
-def _plot_congestion_timeseries_grid(
-    metrics_directory: Path,
-    zones: Sequence[str],
-    metric_name: str,
+def _plot_timeseries_by_penetration(
+    store: ExperimentStore,
+    *,
+    filename: str,
+    x_col: str,
+    y_col: str,
     title: str,
     ylabel: str,
+    stem: str,
     config: PlotConfig,
     incident_window: StageWindows,
+    smooth_window_s: float = 0.0,
+    with_markers: bool = False,
+    sharey: bool = True,
 ) -> list[PlotArtifact]:
-    if not zones:
+    """Generic builder for 2x2 time-series grids grouped by penetration."""
+    if not store.penetrations:
         return []
 
-    artifacts: list[PlotArtifact] = []
-    penetrations = _discover_penetrations(metrics_directory, positive_only=True)
+    ncols = 2
+    figure, axes = _create_grid(
+        len(store.penetrations),
+        ncols=ncols,
+        figsize_per_cell=(6.5, 4.0),
+        sharey=sharey,
+    )
 
-    for zone in zones:
-        figure, axes = _create_grid(
-            len(penetrations),
-            ncols=2,
-            figsize_per_cell=(6.5, 4.0),
-            sharey=True,
-        )
-        zone_label = _human_zone_label(zone)
+    for idx, (axis, p) in enumerate(zip(axes, store.penetrations)):
+        for strategy in ALL_STRATEGIES:
+            rows = store.read_csv(p, strategy, filename)
+            if not rows:
+                continue
+            xs = [float(r[x_col]) for r in rows]
+            ys = [float(r[y_col]) for r in rows]
+            if smooth_window_s > 0:
+                ys = _moving_average(ys, xs, smooth_window_s)
 
-        for axis, penetration in zip(axes, penetrations):
-            for strategy in ALL_STRATEGIES:
-                source_penetration = (
-                    0 if strategy == BASELINE_STRATEGY else penetration
-                )
-                csv_file = (
-                    metrics_directory
-                    / f"p{source_penetration}"
-                    / strategy
-                    / f"metrics_congestion_{zone}_by_interval.csv"
-                )
-                if not csv_file.is_file():
-                    continue
-                rows = _read_csv(csv_file)
-                if not rows:
-                    continue
-
-                xs = [float(row["interval_midpoint_s"]) for row in rows]
-                values = [float(row[metric_name]) for row in rows]
-                style = STRATEGY_STYLES.get(strategy, {})
-                if strategy == BASELINE_STRATEGY:
-                    axis.plot(xs, values, label="M0", **style)
-                else:
-                    axis.plot(
-                        xs,
-                        values,
-                        label=strategy.upper(),
-                        linestyle=style.get("linestyle", "-"),
+            style = THEME.strategy_styles.get(strategy, {})
+            if strategy == BASELINE_STRATEGY:
+                axis.plot(xs, ys, label="M0", **style)
+            else:
+                plot_kwargs: dict[str, Any] = {
+                    "label": strategy.upper(),
+                    "linestyle": style.get("linestyle", "-"),
+                    "alpha": style.get("alpha", 0.9),
+                }
+                if with_markers:
+                    plot_kwargs.update(
                         marker=style.get("marker"),
                         markersize=style.get("markersize"),
                         markevery=max(1, len(xs) // 10),
-                        alpha=style.get("alpha", 0.9),
                     )
+                axis.plot(xs, ys, **plot_kwargs)
 
-            _draw_stage_boundaries(axis, incident_window)
-            axis.set_title(f"{penetration}% CAV")
-            axis.set_xlabel("Time (s)")
-            axis.set_ylabel(ylabel)
-            axis.grid(alpha=0.25)
-
-        _add_shared_legend(figure, axes[0])
-        figure.suptitle(f"{title} - {zone_label}", y=1.05)
-        report_title = f"{_human_metric_label(metric_name)} over time - {zone_label}"
-        artifacts.extend(
-            _save_figure(
-                figure,
-                config,
-                f"metrics_congestion_{metric_name}_{zone}_by_penetration",
-                report_title,
-                is_grid=True,
-            )
+        _draw_stage_boundaries(axis, incident_window)
+        _style_axis(
+            axis,
+            title=f"{p}% CAV",
+            xlabel="Time (s)",
+            ylabel=ylabel if (not sharey or idx % ncols == 0) else None,
+            grid_axis="both",
         )
-    return artifacts
 
+    _add_shared_legend(figure, axes[0])
+    figure.suptitle(title)
+    return _save_figure(figure, config, stem, title, is_grid=True)
 
+## Report generation
 
 def _write_report(
     output_directory: Path,
@@ -639,9 +600,7 @@ def _write_report(
     manifest_section = ""
     if manifest is not None:
         description = html.escape(str(manifest.get("description", "")))
-        manifest_json = html.escape(
-            json.dumps(manifest, indent=2, ensure_ascii=False)
-        )
+        manifest_json = html.escape(json.dumps(manifest, indent=2, ensure_ascii=False))
         manifest_section = (
             "<section><h2>Experiment data</h2>"
             f"<p><strong>Description:</strong> {description}</p>"
@@ -668,24 +627,9 @@ def _write_report(
     return report_path
 
 
-def _discover_congestion_zones(metrics_directory: Path) -> list[str]:
-    prefix = "metrics_congestion_"
-    suffix = "_by_interval.csv"
-    discovered = {
-        csv_file.name[len(prefix) : -len(suffix)]
-        for penetration in _discover_penetrations(metrics_directory, positive_only=True)
-        for strategy_dir in (metrics_directory / f"p{penetration}").iterdir()
-        if strategy_dir.is_dir()
-        for csv_file in strategy_dir.glob(f"{prefix}*{suffix}")
-    }
-    return [zone for zone in CONGESTION_ZONE_ORDER if zone in discovered]
-
-
 def _cleanup_stale_svgs(output_directory: Path, artifacts: Sequence[PlotArtifact]) -> None:
     retained = {
-        artifact.path.resolve()
-        for artifact in artifacts
-        if artifact.path.suffix.lower() == ".svg"
+        a.path.resolve() for a in artifacts if a.path.suffix.lower() == ".svg"
     }
     for stale_svg in output_directory.glob("*.svg"):
         if stale_svg.resolve() not in retained:
@@ -700,62 +644,104 @@ def visualize_metrics(
     incident_window: StageWindows = None,
     manifest: Mapping[str, Any] | None = None,
 ) -> list[Path]:
-    metrics_path = Path(metrics_directory)
+    store = ExperimentStore(Path(metrics_directory))
+    if not store.aggregated:
+        raise ValueError(f"No aggregated metrics found in {store.root}")
+
     output_path = Path(output_directory)
     output_path.mkdir(parents=True, exist_ok=True)
+    config = PlotConfig(output_directory=output_path, formats=tuple(formats), dpi=dpi)
 
-    data = _read_aggregated(metrics_path)
-    if not data:
-        raise ValueError(f"No aggregated metrics found in {metrics_path}")
-
-    config = PlotConfig(
-        output_directory=output_path,
-        formats=tuple(formats),
-        dpi=dpi,
-    )
     artifacts: list[PlotArtifact] = []
 
+    # 1. Efficiency
     for key in EFFICIENCY_KEYS:
-        label = _human_metric_label(key)
+        spec = _metric_spec(key)
         artifacts.extend(
-            _plot_scalar_by_penetration(data, "efficiency", (key,), label, label, config)
+            _plot_penetration_grid(
+                store,
+                [(spec.label, ("efficiency", key))],
+                title=spec.label,
+                ylabel=spec.ylabel,
+                stem=f"efficiency_{key}",
+                config=config,
+            )
         )
-        artifacts.extend(
-            _plot_seed_boxplots(data, "efficiency", (key,), label, config)
-        )
+        artifacts.extend(_plot_boxplots_by_penetration(store, "efficiency", key, config))
 
-    has_congestion = any(
-        zone in values.get("congestion", {})
-        for values in data.values()
-        for zone in CONGESTION_ZONE_ORDER
-    )
-    if has_congestion:
-        for metric_name, ylabel in CONGESTION_METRICS:
+    # 2. Congestion by zone
+    if store.has_congestion_data():
+        for key in CONGESTION_KEYS:
+            spec = _metric_spec(key)
+            panels = [(_zone_label(z), ("congestion", z, key)) for z in CONGESTION_ZONE_ORDER]
             artifacts.extend(
-                _plot_congestion_metric_grid(data, metric_name, ylabel, config)
+                _plot_penetration_grid(
+                    store,
+                    panels,
+                    title=f"{spec.label} by congestion zone",
+                    ylabel=spec.ylabel,
+                    stem=f"congestion_{key}_by_zone",
+                    config=config,
+                )
             )
 
+    # 3. Stability
     for key in STABILITY_KEYS:
-        artifacts.extend(_plot_stability_by_phase(data, key, config))
-
-    artifacts.extend(
-        _plot_speed_timeseries_grid(metrics_path, config, incident_window)
-    )
-
-    zone_names = _discover_congestion_zones(metrics_path)
-    for metric_name, title, ylabel in CONGESTION_TIMESERIES_METRICS:
+        spec = _metric_spec(key)
+        panels = [
+            (phase.replace("_", " ").title(), ("stability", phase, key))
+            for phase in STABILITY_PHASES
+        ]
         artifacts.extend(
-            _plot_congestion_timeseries_grid(
-                metrics_path,
-                zone_names,
-                metric_name,
-                title,
-                ylabel,
-                config,
-                incident_window,
+            _plot_penetration_grid(
+                store,
+                panels,
+                title=f"{spec.label} by incident phase",
+                ylabel=spec.ylabel,
+                stem=f"stability_{key}_by_phase",
+                config=config,
+                ncols=3,
+                figsize_per_cell=(5.0, 5.0),
+                sharey=True,
             )
         )
+
+    # 4. Temporal series of mean speed
+    artifacts.extend(
+        _plot_timeseries_by_penetration(
+            store,
+            filename="metrics_stability_by_step.csv",
+            x_col="time",
+            y_col="mean_speed_mps",
+            title="Mean speed over time - 60 s moving average",
+            ylabel=_metric_spec("mean_speed_mps").ylabel,
+            stem="metrics_mean_speed_by_penetration",
+            config=config,
+            incident_window=incident_window,
+            smooth_window_s=60.0,
+        )
+    )
+
+    # 5. Temporal series of congestion metrics by zone
+    for zone in store.discover_congestion_zones():
+        z_label = _zone_label(zone)
+        for key in CONGESTION_TIMESERIES_KEYS:
+            spec = _metric_spec(key)
+            artifacts.extend(
+                _plot_timeseries_by_penetration(
+                    store,
+                    filename=f"metrics_congestion_{zone}_by_interval.csv",
+                    x_col="interval_midpoint_s",
+                    y_col=key,
+                    title=f"{spec.label} over time - {z_label}",
+                    ylabel=spec.ylabel,
+                    stem=f"metrics_congestion_{key}_{zone}_by_penetration",
+                    config=config,
+                    incident_window=incident_window,
+                    with_markers=True,
+                )
+            )
 
     _cleanup_stale_svgs(output_path, artifacts)
     report_path = _write_report(output_path, artifacts, manifest)
-    return [artifact.path for artifact in artifacts] + [report_path]
+    return [a.path for a in artifacts] + [report_path]
