@@ -88,6 +88,13 @@ STABILITY_KEYS = (
     "max_abs_jerk_mps3",
 )
 
+STRATEGY_STYLES: dict[str, dict[str, Any]] = {
+    "m0": {"color": "#666666", "linestyle": ":", "linewidth": 1.6},
+    "m1": {"linestyle": "-", "marker": "o", "markersize": 7, "alpha": 0.9},
+    "m2": {"linestyle": "--", "marker": "s", "markersize": 6, "alpha": 0.9},
+    "m3": {"linestyle": "-.", "marker": "^", "markersize": 5, "alpha": 0.9},
+}
+
 
 @dataclass(frozen=True)
 class PlotConfig:
@@ -255,13 +262,14 @@ def _plot_penetration_curves(
             ys.append(mean)
             errors.append(std)
         if xs:
+            style = STRATEGY_STYLES.get(strategy, {})
             axis.errorbar(
                 xs,
                 ys,
                 yerr=errors,
-                marker="o",
                 capsize=capsize,
                 label=strategy.upper(),
+                **style,
             )
             has_data = True
 
@@ -489,17 +497,16 @@ def _plot_speed_timeseries_grid(
                 60.0,
             )
 
+            style = STRATEGY_STYLES.get(strategy, {})
             if strategy == BASELINE_STRATEGY:
-                axis.plot(
-                    xs, ys, color="#666666", linestyle="--", label="M0 (baseline)"
-                )
+                axis.plot(xs, ys, label="M0 (baseline)", **style)
             else:
-                axis.plot(xs, ys, label=strategy.upper())
-                axis.fill_between(
+                axis.plot(
                     xs,
-                    [v - e for v, e in zip(ys, stds)],
-                    [v + e for v, e in zip(ys, stds)],
-                    alpha=0.15,
+                    ys,
+                    label=strategy.upper(),
+                    linestyle=style.get("linestyle", "-"),
+                    alpha=style.get("alpha", 0.9),
                 )
 
         _draw_stage_boundaries(axis, incident_window)
@@ -556,11 +563,20 @@ def _plot_congestion_timeseries_grid(
 
                 xs = [float(row["interval_midpoint_s"]) for row in rows]
                 values = [float(row[metric_name]) for row in rows]
+                style = STRATEGY_STYLES.get(strategy, {})
                 if strategy == BASELINE_STRATEGY:
-                    axis.plot(xs, values, color="#666666", linestyle="--", label="M0")
+                    axis.plot(xs, values, label="M0", **style)
                 else:
-                    axis.plot(xs, values, linestyle="-", label=strategy.upper())
-
+                    axis.plot(
+                        xs,
+                        values,
+                        label=strategy.upper(),
+                        linestyle=style.get("linestyle", "-"),
+                        marker=style.get("marker"),
+                        markersize=style.get("markersize"),
+                        markevery=max(1, len(xs) // 10),  # ~10 marcadores por curva
+                        alpha=style.get("alpha", 0.9),
+                    )
             _draw_stage_boundaries(axis, incident_window)
             axis.set_title(_human_zone_label(zone))
             axis.set_xlabel("Time (s)")
