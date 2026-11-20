@@ -289,7 +289,12 @@ def _plot_penetration_curves(
 def _add_shared_legend(figure: plt.Figure, axis: plt.Axes) -> None:
     handles, labels = axis.get_legend_handles_labels()
     if handles:
-        figure.legend(handles, labels, loc="upper center", ncol=4)
+        figure.legend(
+            handles,
+            labels,
+            loc="outside lower center",
+            ncol=min(len(handles), 4),
+        )
 
 
 def _save_figure(
