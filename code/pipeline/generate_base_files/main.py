@@ -54,7 +54,12 @@ def generate_routes(
     validate_routes(network_file, base_route_file)
 
     route_files: list[Path] = [base_route_file]
-    for penetration in config["cav_penetrations"]:
+
+    cav_penetrations = config.get("cav_penetrations", [])
+    if 0.0 not in cav_penetrations:
+        cav_penetrations.append(0.0)
+
+    for penetration in cav_penetrations:
         percentage = int(round(float(penetration) * 100))
         route_file = output_directory / f"penetration_{percentage}.rou.xml"
         assign_vehicle_types(
