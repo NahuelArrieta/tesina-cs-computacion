@@ -237,18 +237,27 @@ esta etapa.
 
 ## Etapa 4: extracción y procesamiento de métricas
 
-La Etapa 4 lee el manifiesto del experimento y procesa las salidas crudas de
-las estrategias configuradas. La configuración y los módulos de esta etapa se
-encuentran en [`code/metrics/`](code/metrics/), con la configuración en
-[`code/metrics/config/metrics.json`](code/metrics/config/metrics.json).
-El grafo se toma desde `artifacts/graph.graphml`, mientras que los archivos
-`tripinfo.xml`, `fcd_output.xml` y `e2_output.xml` se leen desde
-`output/p{penetración}/m{estrategia}/`.
+La Etapa 4 recibe el nombre del experimento y agrega las seeds configuradas
+para cada combinación de penetración y estrategia. El grafo se toma desde
+`artifacts/graph.graphml`, mientras que los archivos `tripinfo.xml`,
+`fcd_output.xml` y `e2_output.xml` se leen desde
+`output/p{penetración}/m{estrategia}/seed_{seed}/`.
 
 ```bash
-python code/metrics/main.py \
-  --config code/metrics/config/metrics.json
+PYTHONPATH=code python code/metrics/main.py sample
 ```
+
+Para procesar una sola combinación:
+
+```bash
+PYTHONPATH=code python code/metrics/main.py sample \
+  --penetration 0.25 \
+  --strategy m1
+```
+
+Sin `--penetration` se procesan todas las penetraciones; sin `--strategy` se
+procesan todas las estrategias válidas. `m0` se procesa únicamente en `p0` y no
+acepta `--penetration`.
 
 Los resultados se guardan por estrategia en:
 
@@ -283,3 +292,8 @@ experiments/<experimento>/results/
 
 El reporte HTML referencia los gráficos SVG. No se generan PNG, PDF, CSV ni
 manifiestos de visualización.
+Antes de generar resultados, Stage 5 verifica que existan los JSON y CSV
+agregados de todas las combinaciones declaradas por el manifiesto:
+`p0/m0` y cada penetración positiva con `m1`, `m2` y `m3`. También exige los
+CSV de las cuatro zonas de congestión. Si falta algún archivo, termina antes
+de modificar los gráficos o el reporte.
