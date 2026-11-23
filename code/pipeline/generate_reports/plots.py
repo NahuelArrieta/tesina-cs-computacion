@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import base64
 import csv
 from dataclasses import dataclass
 import html
 import json
 import math
-import mimetypes
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
+from urllib.parse import quote
 
 import matplotlib
 
@@ -581,19 +580,18 @@ def _write_report(
     artifacts: Sequence[PlotArtifact],
     manifest: Mapping[str, Any] | None = None,
 ) -> Path:
+    report_path = output_directory.parent / "report.html"
     sections: list[str] = []
     for artifact in artifacts:
         if artifact.path.suffix.lower() != ".svg":
             continue
         title = html.escape(artifact.title)
         image_class = "plot-grid" if artifact.is_grid else "plot-single"
-        content = base64.b64encode(artifact.path.read_bytes()).decode("ascii")
-        mime_type = (
-            mimetypes.guess_type(artifact.path.name)[0] or "application/octet-stream"
-        )
+        relative_path = artifact.path.relative_to(report_path.parent).as_posix()
+        src = html.escape(quote(relative_path, safe="/"), quote=True)
         sections.append(
             f"<h2>{title}</h2>"
-            f'<img class="{image_class}" src="data:{mime_type};base64,{content}" '
+            f'<img class="{image_class}" src="{src}" '
             f'alt="{title}" />'
         )
 
@@ -609,7 +607,6 @@ def _write_report(
             "</details></section>"
         )
 
-    report_path = output_directory.parent / "report.html"
     report_path.write_text(
         '<!doctype html><html><head><meta charset="utf-8">'
         "<title>Metrics visualizations</title>"
