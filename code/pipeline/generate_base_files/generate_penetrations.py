@@ -24,11 +24,13 @@ def _create_cav_type() -> ET.Element:
         {
             "id": "CAV",
             "vClass": "passenger",
-            "carFollowModel": "Krauss",
+            "carFollowModel": "IDM",
             "accel": "2.6",
-            "decel": "4.5",
+            "decel": "2.0",
+            "emergencyDecel": "4.5",
             "tau": "0.5",
-            "sigma": "0.5",
+            "minGap": "2.0",
+            "stepping": "0.1",
         },
     )
 
