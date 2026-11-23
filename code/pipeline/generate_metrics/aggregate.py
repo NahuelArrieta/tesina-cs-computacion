@@ -38,7 +38,14 @@ def _aggregate_leaves(samples: list[Any]) -> Any:
 
 
 def aggregate_metrics(seed_metrics: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
-    samples = list(seed_metrics)
+    samples = [
+        {
+            key: value
+            for key, value in metrics.items()
+            if not key.endswith("_timeseries")
+        }
+        for metrics in seed_metrics
+    ]
     if not samples:
         raise ValueError("At least one seed metrics file is required")
     return _aggregate_leaves(samples)
