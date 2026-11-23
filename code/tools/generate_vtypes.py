@@ -17,7 +17,6 @@ REQUIRED_COLUMNS = {
     "Accel_Std",
     "Decel_Mean",
     "Decel_Std",
-    "Speed_Mean",
 }
 SAMPLE_COUNT = 50
 MINIMUM_ACCELERATION = 0.5
@@ -83,11 +82,10 @@ def generate_vtypes(
             accel_std = float(row["Accel_Std"])
             decel_mean = float(row["Decel_Mean"])
             decel_std = float(row["Decel_Std"])
-            max_speed = float(row["Speed_Mean"])
         except (TypeError, ValueError) as error:
             raise ValueError(
                 f"{vehicle_type} row contains a non-numeric value in "
-                "Accel_Mean, Accel_Std, Decel_Mean, Decel_Std, or Speed_Mean"
+                "Accel_Mean, Accel_Std, Decel_Mean, or Decel_Std"
             ) from error
 
         accel_samples = np.clip(
@@ -113,7 +111,6 @@ def generate_vtypes(
                     "id": f"{distribution_id}_{index}",
                     "accel": f"{accel:.2f}",
                     "decel": f"{decel:.2f}",
-                    "maxSpeed": f"{max_speed:.2f}",
                     "length": VEHICLE_LENGTH,
                     "minGap": MINIMUM_GAP,
                     "tau": REACTION_TIME,

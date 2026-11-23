@@ -2,7 +2,7 @@
   "experiment": "sample",
   "description": "Experimento sample para evaluación de estrategias de control y penetraciones CAV.",
   "network": "grid5x5.net.xml",
-  "vtypes": "vtypes.add.xml",
+  "vtypes": "sample.add.xml",
   "begin_s": 0,
   "end_s": 1000,
   "period_s": 1.5,
