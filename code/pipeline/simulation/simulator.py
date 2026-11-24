@@ -1,9 +1,12 @@
+import csv
 import os
 import sys
 import json
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Sequence
 import traci
 
 from strategies.main import get_strategy
@@ -15,7 +18,24 @@ except ImportError:
 ## Output files
 TRIPINFO_PATH = "tripinfo.xml"
 FCD_OUTPUT_PATH = "fcd_output.xml"
+COMPUTATION_TIME_PATH = "computation_time.csv"
 DEFAULT_STEP_LENGTH_S = 0.1
+
+
+def export_computation_times(
+    output_dir: str | Path,
+    computation_times: Sequence[tuple[float, float]],
+) -> Path:
+    """Write per-step strategy execution times to a CSV file."""
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    computation_time_file = output_path / COMPUTATION_TIME_PATH
+    with computation_time_file.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(("time", "execution_time_s"))
+        for sim_time, elapsed_s in computation_times:
+            writer.writerow((sim_time, f"{elapsed_s:.9f}"))
+    return computation_time_file
 
 
 def run_simulation(
@@ -81,6 +101,7 @@ def run_simulation(
     current_time = 0.0
     incident_started = False
     next_visualization_s = 0.0
+    computation_times: list[tuple[float, float]] = []
     try:
         while traci.simulation.getMinExpectedNumber() > 0 and current_time < duration:
             current_time = traci.simulation.getTime()
@@ -95,9 +116,15 @@ def run_simulation(
                 incident.end()
 
             if strategy is not None:
+                start_s = time.perf_counter()
                 strategy.execute()
+                elapsed_s = time.perf_counter() - start_s
+                computation_times.append((round(current_time, 6), elapsed_s))
 
             traci.simulationStep()
+
+        if output_dir:
+            export_computation_times(output_path, computation_times)
     finally:
         if incident.is_active:
             incident.end()
