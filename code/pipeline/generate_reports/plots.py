@@ -70,6 +70,12 @@ METRICS: dict[str, MetricSpec] = {
     "hard_brake_ratio": MetricSpec("Hard-braking ratio"),
     "mean_abs_jerk_mps3": MetricSpec("Mean absolute jerk", "m/s³"),
     "max_abs_jerk_mps3": MetricSpec("Maximum absolute jerk", "m/s³"),
+    "total_time_s": MetricSpec("Total computation time", "s"),
+    "mean_step_time_ms": MetricSpec("Mean step computation time", "ms"),
+    "std_step_time_ms": MetricSpec("Step computation time std", "ms"),
+    "p95_step_time_ms": MetricSpec("P95 step computation time", "ms"),
+    "max_step_time_ms": MetricSpec("Maximum step computation time", "ms"),
+    "execution_time_ms": MetricSpec("Step execution time", "ms"),
 }
 
 EFFICIENCY_KEYS = (
@@ -98,6 +104,12 @@ STABILITY_KEYS = (
     "hard_brake_ratio",
     "mean_abs_jerk_mps3",
     "max_abs_jerk_mps3",
+)
+
+COMPUTATION_TIME_STEP_KEYS = (
+    "mean_step_time_ms",
+    "p95_step_time_ms",
+    "max_step_time_ms",
 )
 
 
@@ -247,6 +259,13 @@ class ExperimentStore:
             zone in values.get("congestion", {})
             for values in self.aggregated.values()
             for zone in CONGESTION_ZONE_ORDER
+        )
+
+    def has_computation_time_data(self) -> bool:
+        return any(
+            isinstance(values.get("computation_time"), Mapping)
+            and bool(values["computation_time"])
+            for values in self.aggregated.values()
         )
 
     def discover_congestion_zones(self) -> list[str]:
@@ -738,6 +757,56 @@ def visualize_metrics(
                     with_markers=True,
                 )
             )
+
+    # 6. Computation time
+    if store.has_computation_time_data():
+        step_panels = [
+            (_metric_spec(key).label, ("computation_time", key))
+            for key in COMPUTATION_TIME_STEP_KEYS
+        ]
+        artifacts.extend(
+            _plot_penetration_grid(
+                store,
+                step_panels,
+                title="Step computation time across penetration levels",
+                ylabel="Computation time (ms)",
+                stem="computation_time_step_by_penetration",
+                config=config,
+                ncols=3,
+                figsize_per_cell=(5.0, 5.0),
+                sharey=False,
+            )
+        )
+        total_spec = _metric_spec("total_time_s")
+        artifacts.extend(
+            _plot_penetration_grid(
+                store,
+                [(total_spec.label, ("computation_time", "total_time_s"))],
+                title=total_spec.label,
+                ylabel=total_spec.ylabel,
+                stem="computation_time_total_time_s",
+                config=config,
+            )
+        )
+        artifacts.extend(
+            _plot_boxplots_by_penetration(
+                store, "computation_time", "mean_step_time_ms", config
+            )
+        )
+        artifacts.extend(
+            _plot_timeseries_by_penetration(
+                store,
+                filename="metrics_computation_time_by_step.csv",
+                x_col="time",
+                y_col="execution_time_ms",
+                title="Step execution time over time - 60 s moving average",
+                ylabel=_metric_spec("execution_time_ms").ylabel,
+                stem="metrics_computation_time_by_penetration",
+                config=config,
+                incident_window=incident_window,
+                smooth_window_s=60.0,
+            )
+        )
 
     _cleanup_stale_svgs(output_path, artifacts)
     report_path = _write_report(output_path, artifacts, manifest)

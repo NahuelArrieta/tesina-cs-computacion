@@ -322,5 +322,5 @@ manifiestos de visualización.
 Antes de generar resultados, Stage 5 verifica que existan los JSON y CSV
 agregados de todas las combinaciones declaradas por el manifiesto:
 `p0/m0` y cada penetración positiva con `m1`, `m2` y `m3`. También exige los
-CSV de las cuatro zonas de congestión. Si falta algún archivo, termina antes
-de modificar los gráficos o el reporte.
+CSV de estabilidad, tiempo de cómputo y las cuatro zonas de congestión. Si falta
+algún archivo, termina antes de modificar los gráficos o el reporte.

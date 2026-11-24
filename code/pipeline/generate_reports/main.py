@@ -48,6 +48,7 @@ def validate_aggregated_metrics(
             required_files = [
                 directory / "metrics.json",
                 directory / "metrics_stability_by_step.csv",
+                directory / "metrics_computation_time_by_step.csv",
             ]
             required_files.extend(
                 directory / f"metrics_congestion_{zone}_by_interval.csv"
