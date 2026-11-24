@@ -256,16 +256,17 @@ Cada proceso tiene su propia conexión TraCI y su propio proceso SUMO. No se
 debe combinar `--workers` mayor que uno con `--gui-overlay`.
 
 La ejecución lee del manifiesto la configuración del incidente y los directorios
-del experimento. Las salidas crudas se guardan por penetración y estrategia.
-El cálculo de métricas pertenece a una etapa posterior y no se ejecuta durante
-esta etapa.
+del experimento. Las salidas crudas (`tripinfo.xml`, `fcd_output.xml`,
+`e2_output.xml` y `computation_time.csv`, con el tiempo de ejecución por paso de
+`strategy.execute()`) se guardan por penetración y estrategia. El cálculo de
+métricas pertenece a una etapa posterior y no se ejecuta durante esta etapa.
 
 ## Etapa 4: extracción y procesamiento de métricas
 
 La Etapa 4 recibe el nombre del experimento y agrega las seeds configuradas
 para cada combinación de penetración y estrategia. El grafo se toma desde
 `artifacts/graph.graphml`, mientras que los archivos `tripinfo.xml`,
-`fcd_output.xml` y `e2_output.xml` se leen desde
+`fcd_output.xml`, `e2_output.xml` y `computation_time.csv` se leen desde
 `output/p{penetración}/m{estrategia}/seed_{seed}/`.
 
 ```bash
@@ -290,6 +291,7 @@ Los resultados se guardan por estrategia en:
 <experimento>/metrics/p<penetración>/m<estrategia>/
 ├── metrics.json
 ├── metrics_stability_by_step.csv
+├── metrics_computation_time_by_step.csv
 └── metrics_congestion_<zona>_by_interval.csv
 ```
 

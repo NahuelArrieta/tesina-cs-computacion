@@ -7,10 +7,12 @@ from typing import Any, Iterable, Mapping, Sequence
 from utils.dual_graph_handler import load_dual_graph
 from utils.subgraph_extractor import get_zones
 try:
+    from .computation_time_metrics import parse_and_compute_computation_time
     from .congestion_metrics import parse_and_compute_congestion_e2
     from .efficiency_metrics import compute_network_efficiency, parse_tripinfo
     from .stability_metrics import parse_and_compute_phased_stability
 except ImportError:
+    from computation_time_metrics import parse_and_compute_computation_time
     from congestion_metrics import parse_and_compute_congestion_e2
     from efficiency_metrics import compute_network_efficiency, parse_tripinfo
     from stability_metrics import parse_and_compute_phased_stability
@@ -31,10 +33,11 @@ def collect_metrics(
     congested_queue_threshold_m: float = 20.0,
     baseline_speed_ratio: float = 0.90,
 ) -> MetricData:
-    """Compute all metrics from the XML files produced by a simulation.
+    """Compute all metrics from the output files produced by a simulation.
 
-    ``output_dir`` must contain ``tripinfo.xml``, ``fcd_output.xml`` and
-    ``e2_output.xml``. Missing files are reported by the underlying parsers.
+    ``output_dir`` must contain ``tripinfo.xml``, ``fcd_output.xml``,
+    ``e2_output.xml`` and ``computation_time.csv``. Missing files are reported
+    by the underlying parsers.
     """
     output_path = Path(output_dir)
     excluded = set(exclude_ids)
@@ -67,12 +70,18 @@ def collect_metrics(
         baseline_speed_ratio,
     )
 
+    computation_time_steps, computation_time = parse_and_compute_computation_time(
+        output_path / "computation_time.csv"
+    )
+
     return {
         "efficiency": efficiency,
         "stability": stability,
         "stability_timeseries": stability_steps,
         "congestion": congestion_per_zone,
         "congestion_timeseries": congestion_timeseries,
+        "computation_time": computation_time,
+        "computation_time_timeseries": computation_time_steps,
     }
 
 
@@ -120,6 +129,13 @@ def export_metrics(
         raise TypeError("stability_timeseries must be a list of row records")
     _write_rows(stability_rows, stability_path, ("time",))
     output_paths["stability_timeseries"] = stability_path
+
+    computation_time_path = destination / f"{basename}_computation_time_by_step.csv"
+    computation_time_rows = metrics.get("computation_time_timeseries", [])
+    if not isinstance(computation_time_rows, list):
+        raise TypeError("computation_time_timeseries must be a list of row records")
+    _write_rows(computation_time_rows, computation_time_path, ("time",))
+    output_paths["computation_time_timeseries"] = computation_time_path
 
     congestion_timeseries = metrics.get("congestion_timeseries", {})
     if not isinstance(congestion_timeseries, Mapping):

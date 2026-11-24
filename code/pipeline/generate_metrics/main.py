@@ -109,6 +109,7 @@ def extract_metrics(
         strategy = selected_strategy
         seed_metrics: list[dict[str, Any]] = []
         stability_seed_rows: list[list[dict[str, Any]]] = []
+        computation_time_seed_rows: list[list[dict[str, Any]]] = []
         congestion_seed_rows: dict[str, list[list[dict[str, Any]]]] = {}
         aggregate_directory = metrics_root / f"p{percentage}" / strategy
         aggregate_directory.mkdir(parents=True, exist_ok=True)
@@ -136,6 +137,7 @@ def extract_metrics(
             )
             seed_metrics.append(metrics)
             stability_seed_rows.append(metrics["stability_timeseries"])
+            computation_time_seed_rows.append(metrics["computation_time_timeseries"])
             for zone, rows in metrics["congestion_timeseries"].items():
                 congestion_seed_rows.setdefault(str(zone), []).append(rows)
 
@@ -152,7 +154,18 @@ def extract_metrics(
             stability_output,
             "time",
         )
-        timeseries = {"stability": str(stability_output)}
+        computation_time_output = (
+            aggregate_directory / "metrics_computation_time_by_step.csv"
+        )
+        aggregate_rows(
+            computation_time_seed_rows,
+            computation_time_output,
+            "time",
+        )
+        timeseries = {
+            "stability": str(stability_output),
+            "computation_time": str(computation_time_output),
+        }
 
         for zone, seed_rows in congestion_seed_rows.items():
             output_file = (
